@@ -6,7 +6,7 @@ These are the real commands we run inside our AI coding agent — a set of inter
 
 > **This is a system, not a bag of scripts.** The pipelines lean on a few companion plugins and a small doc-method (see [What you need](#what-you-need)). Install those and they run as designed; skip them and some stages no-op. Everything here is genericized from a private codebase — treat the worked examples as illustrations, not prescriptions.
 
-**New here?** Start with the [cheat sheet](CHEATSHEET.md) — which command to use when, and how they chain together.
+**New to Claude Code? Start with [the system](THE-SYSTEM.md).** The agent forgets everything between sessions — nothing holds unless it's written where it reads. [`THE-SYSTEM.md`](THE-SYSTEM.md) is the whole method on one page: six layers hold the state, three processes move work between them, one constraint keeps it light. That's how you keep a project organized; the commands here just automate it. Then the [cheat sheet](CHEATSHEET.md) shows which command to use when.
 
 ## What's in the box
 
