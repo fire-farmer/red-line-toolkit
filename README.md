@@ -6,7 +6,7 @@ These are the real commands we run inside our AI coding agent — a set of inter
 
 > **This is a system, not a bag of scripts.** The pipelines lean on a few companion plugins and a small doc-method (see [What you need](#what-you-need)). Install those and they run as designed; skip them and some stages no-op. Everything here is genericized from a private codebase — treat the worked examples as illustrations, not prescriptions.
 
-**New to Claude Code? Start with [the system](THE-SYSTEM.md).** The agent forgets everything between sessions — nothing holds unless it's written where it reads. [`THE-SYSTEM.md`](THE-SYSTEM.md) is the whole method on one page: six layers hold the state, three processes move work between them, one constraint keeps it light. That's how you keep a project organized; the commands here just automate it. Then the [cheat sheet](CHEATSHEET.md) shows which command to use when.
+**New to Claude Code? Start with [the system](THE-SYSTEM.md).** The agent forgets everything between sessions — nothing holds unless it's written where it reads. [`THE-SYSTEM.md`](THE-SYSTEM.md) is the whole method on one page: six layers hold the state, three processes move work between them, one constraint keeps it light. That's how you keep a project organized; the commands here just automate it. Ready to set it up? [**`QUICKSTART.md`**](QUICKSTART.md) stands the whole system up in about fifteen minutes — six files, three commands, one rule. Then the [cheat sheet](CHEATSHEET.md) shows which command to use when.
 
 ## What's in the box
 
@@ -62,10 +62,15 @@ The pipelines compose other tools. Without them, the stages that call them will 
 **Built-in skills** — `/simplify` and `/security-review` (ship with Claude Code).
 
 **The doc-method** — the session and cleanup commands assume a tiny, framework-free convention for keeping project state legible. Starter templates are in [`templates/`](templates/):
-- `CLAUDE.md` — the always-on rules for how the agent works in your repo
-- `STACK.md` — the live-state / session-handoff log: what's in flight, the phase-local follow-ups, and the in-force **lessons** (each carries an `[audits survived: N]` counter; `/end-session` promotes one to permanent memory once it passes the three-point filter — survived 3+ audits, generalizes, one-line rule)
-- `GLOBAL-PLAN.md` — the structure: the campaigns and their phases, in order. `STACK.md`'s "Current location" points into it
-- `Standing-FUs.md` — the cross-cutting follow-up backlog `/cluster-fus` re-buckets
+- `CLAUDE.md` — the rules: the always-on constitution for how the agent works in your repo
+- `STACK.md` — the ledger: live state, the session handoff, and the in-force **lessons** (each carries an `[audits survived: N]` counter; `/end-session` promotes one to permanent memory once it passes the three-point filter — survived 3+ audits, generalizes, one-line rule)
+- `GLOBAL-PLAN.md` — the route: the campaigns and their phases, in order. `STACK.md`'s "Current location" points into it
+- `Standing-FUs.md` — the parking lot: the cross-cutting follow-up backlog `/cluster-fus` re-buckets
+- `VISION.md` — the destination: what the project ultimately is + the stable brand/identity constraints (the yardstick)
+- `CAMPAIGN.md` — one effort: a single multi-phase campaign plan (Phases → Steps), lived at `docs/plans/<date>-<campaign>.md`
+- `MEMORY.md` — graduated lessons: the always-loaded index of what's been learned, bodies loaded on match
+
+All six state layers plus the rules — see [`THE-SYSTEM.md`](THE-SYSTEM.md) for how they fit, or [`QUICKSTART.md`](QUICKSTART.md) to stand them all up.
 
 This is the same lightweight anti-drift method the [/stack](https://redlinedigital.dev/stack/) page teaches. It's deliberately lighter than a heavyweight process — adopt as much or as little as fits.
 
