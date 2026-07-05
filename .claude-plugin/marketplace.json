@@ -1,0 +1,25 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "red-line-toolkit",
+  "description": "The field guides from redlinedigital.dev — opinionated Claude Code pipelines for high-rigor refactors, module builds, page work, pre-ship audits, and session bookkeeping.",
+  "owner": {
+    "name": "Scott Oliver",
+    "url": "https://redlinedigital.dev"
+  },
+  "plugins": [
+    {
+      "name": "red-line-toolkit",
+      "source": "./",
+      "description": "12 commands + 10 adversarial-critic agents + 1 skill: change-heavy, module-build/sprint, the page-design/code/implement pipeline, module-audit, mobile-audit, cleanup-light, cluster-fus, pre-commit-check, start/end-session, and the-adjudicator. Composes a lightweight anti-drift doc-method with a fleet of critics.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Scott Oliver",
+        "url": "https://redlinedigital.dev"
+      },
+      "keywords": ["claude-code", "pipeline", "code-review", "refactoring", "audit", "workflow"],
+      "category": "development",
+      "homepage": "https://redlinedigital.dev/guides/",
+      "license": "MIT"
+    }
+  ]
+}

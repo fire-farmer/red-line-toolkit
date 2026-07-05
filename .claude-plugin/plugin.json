@@ -1,0 +1,19 @@
+{
+  "name": "red-line-toolkit",
+  "description": "The field guides from redlinedigital.dev: opinionated, battle-tested Claude Code pipelines for high-rigor refactors, module builds, page work, pre-ship audits, and session bookkeeping. Composes a lightweight anti-drift doc-method with a fleet of adversarial critics.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Scott Oliver",
+    "url": "https://redlinedigital.dev"
+  },
+  "homepage": "https://redlinedigital.dev/guides/",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "pipeline",
+    "code-review",
+    "refactoring",
+    "audit",
+    "workflow"
+  ]
+}
