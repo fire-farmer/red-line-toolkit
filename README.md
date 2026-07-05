@@ -63,7 +63,8 @@ The pipelines compose other tools. Without them, the stages that call them will 
 
 **The doc-method** — the session and cleanup commands assume a tiny, framework-free convention for keeping project state legible. Starter templates are in [`templates/`](templates/):
 - `CLAUDE.md` — the always-on rules for how the agent works in your repo
-- `STACK.md` — the live-state / session-handoff log (what's in flight, what's next)
+- `STACK.md` — the live-state / session-handoff log: what's in flight, the phase-local follow-ups, and the in-force **lessons** (each carries an `[audits survived: N]` counter; `/end-session` promotes one to permanent memory once it passes the three-point filter — survived 3+ audits, generalizes, one-line rule)
+- `GLOBAL-PLAN.md` — the structure: the campaigns and their phases, in order. `STACK.md`'s "Current location" points into it
 - `Standing-FUs.md` — the cross-cutting follow-up backlog `/cluster-fus` re-buckets
 
 This is the same lightweight anti-drift method the [/stack](https://redlinedigital.dev/stack/) page teaches. It's deliberately lighter than a heavyweight process — adopt as much or as little as fits.
