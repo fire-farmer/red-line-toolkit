@@ -28,12 +28,11 @@ For each FU row, read its `[type · pipeline]` tag and `home:` address if presen
 
 ## Stage 3 — Bucket + assess batch-readiness
 
-Group by `type`. For each type-cluster, count members and apply the pipeline rule:
-- **≥5 same-type FUs** → `/change-heavy` batch candidate (a cohesive multi-file sweep)
-- **2-4 same-type FUs** → `/cleanup-light` batch candidate
+Group by `type`. For each type-cluster, count members:
+- **2 or more same-type FUs** → a batch candidate
 - **1** → not yet a batch; leave it
 
-If members carry conflicting pipeline tags, the batch inherits the heavier (`/change-heavy`). Note any cluster spanning both STACK (phase-local) and Standing-FUs — that's a signal the work crosses the phase boundary.
+**The batch's pipeline is the project's CLAUDE.md Heavy-rigor trigger, not its size.** A batch that reaches a listed high-risk area or a new data model / API shape → `/change-heavy`; any other batch → `/cleanup-light`, which takes a whole `home:` group at any file count. A project whose CLAUDE.md still states a file-count trigger applies that; one that states no trigger suggests `/cleanup-light` and flags any batch touching money, auth, data or payments. A member tag written under the old file-count rule is advisory — re-decide against the trigger. Note any cluster spanning both STACK (phase-local) and Standing-FUs — that's a signal the work crosses the phase boundary.
 
 ## Stage 4 — Report
 
@@ -41,9 +40,9 @@ Output a scannable table, ordered by batch-readiness (most-ready first):
 
 ```
 BATCH-READY:
-  type-design        ×9   → /change-heavy   [STACK: 7 (home: Sweep/2.3) + Standing: 2]
-  silent-failure     ×4   → /cleanup-light          [STACK: 4 (Sweep/1.4)]
-  test-coverage      ×6   → /change-heavy    [STACK: 5 + Standing: 1]
+  type-design        ×9   → /cleanup-light   [STACK: 7 (home: Sweep/2.3) + Standing: 2]
+  silent-failure     ×4   → /change-heavy (2 touch auth)   [STACK: 4 (Sweep/1.4)]
+  test-coverage      ×6   → /cleanup-light   [STACK: 5 + Standing: 1]
 
 NOT YET BATCHABLE (1 each): observability, perf
 
@@ -55,7 +54,7 @@ For each batch-ready cluster, list its member FUs (one line each: `what — home
 
 ## Stage 5 — Suggest next action
 
-Recommend the single highest-leverage batch (largest cohesive cluster targeting open work) and name the exact pipeline + the FUs it would absorb. Example: *"Highest leverage: the 9 type-design FUs → one `/change-heavy` run on the branded-type architecture (Percentage + NumericString + union-lifts), absorbing 7 Sweep/2.3 + 2 Standing rows."*
+Recommend the single highest-leverage batch (largest cohesive cluster targeting open work) and name the exact pipeline + the FUs it would absorb. Example: *"Highest leverage: the 9 type-design FUs → one `/cleanup-light` run on the branded-type cleanup (Percentage + NumericString + union-lifts — types, not a new data model or API shape), absorbing 7 Sweep/2.3 + 2 Standing rows."*
 
 Do NOT start the pipeline — the user decides.
 
@@ -67,7 +66,7 @@ After the report + recommendation are delivered, append one JSON line to `~/.cla
 echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"cluster-fus\",\"outcome\":\"<completed|no-op>\",\"clusters\":<total type-clusters found>,\"batch_ready\":<clusters meeting the ≥2 batch threshold>,\"untagged\":<untagged/orphaned FU rows flagged>}" >> ~/.claude/metrics.jsonl
 ```
 
-`clusters` = number of distinct type-buckets from Stage 3; `batch_ready` = how many of those hit the `/cleanup-light` (2-4) or `/change-heavy` (≥5) threshold; `untagged` = the count surfaced in the UNTAGGED + ORPHANED report lines (Stage 4). On an empty backlog emit `outcome:"no-op"` with all three counts `0`.
+`clusters` = number of distinct type-buckets from Stage 3; `batch_ready` = how many of those have 2 or more members (the pipeline is decided by the Heavy-rigor trigger, not the count); `untagged` = the count surfaced in the UNTAGGED + ORPHANED report lines (Stage 4). On an empty backlog emit `outcome:"no-op"` with all three counts `0`.
 
 ## Failure modes
 

@@ -4,7 +4,7 @@ description: |
   Use this agent when filtering AI code review noise, triaging design feedback, or running Stage 3 of /change-heavy. The Adjudicator is a read-only judge that marks each critique as KEEP/DITCH/MODIFY against the project's actual standards (CLAUDE.md, docs/STYLE_GUIDE.md, STACK.md). Does not generate new critiques, rewrite plans, or write code. Examples:
 
   <example>
-  Context: User has reached Stage 3 of /change-heavy with structured findings from two critic agents.
+  Context: User has reached Stage 3 of /change-heavy with structured findings from three critic agents (two same-family critics and the Fable plan critic).
   user: "Adjudicate these critiques against my locked plan. Plan: docs/plans/2026-05-08-tier-2-phase-1.md. Critic findings: [structured block from Stage 2]"
   assistant: "I'll dispatch The Adjudicator to adjudicate each critique as KEEP/DITCH/MODIFY against the project's standards."
   <commentary>
@@ -251,7 +251,7 @@ Apply these as your calibration anchor when judging unfamiliar critiques.
 
 **Verdict:** DITCH.
 **Steelman:** If `ReportsOverview` renders a long list of memoized children on a hot path, the inline arrow could cause measurable re-render jank under realistic dataset sizes.
-**Reasoning:** Even granting the steelman, scope discipline applies — the plan covers `useFieldDefaults`, not ReportsOverview. CLAUDE.md "Fixes noticed nearby go to Follow-ups, not silently into the diff." Appropriate action: append to STACK.md FOLLOW-UPS, not this diff.
+**Reasoning:** Even granting the steelman, scope discipline applies — the plan covers `useFieldDefaults`, not ReportsOverview, and a memo-defeating callback is a different class of work from consolidating a hook. The filing bar decides the rest: it isn't the same class, so it isn't fixed here; it's filed only if it passes the 2-week filter with a named reason, otherwise dropped with a line in the commit body. (Had the critique found the same `useFieldDefaults` defect at a fourth call site, it would be KEEP — the same class is in scope.)
 
 ---
 

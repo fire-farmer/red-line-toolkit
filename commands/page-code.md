@@ -20,7 +20,7 @@ Locate the locked design plan:
 - If not locked, refuse and tell user to lock the design plan first
 
 Run the 3-item gate (cheatsheet §5):
-1. Tier check
+1. **Rigor check** — confirm pipeline-worthy: a new page, a new abstraction, or a risk surface under the project's CLAUDE.md Heavy-rigor trigger
 2. **Risk surface check** — engage security-asymmetric upgrade if RLS / auth / Stripe / exports / financial calc touched
 3. Existing-primitive check
 

@@ -167,8 +167,8 @@ echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"p
 
 - **Single-page work** — use `/page-design` / `/page-code` / `/page-implement` directly. Sprint adds friction for one-off page work.
 - **Module audits (post-ship)** — use `/module-audit` after the module is shipped.
-- **Refactors of shipped modules** — use `/change-heavy` for cross-file refactors.
-- **Cleanup of existing FUs** — use `/cleanup-light` from STACK.md backlog.
+- **Changes to shipped modules** — use `/change-heavy` when the change meets the project's CLAUDE.md Heavy-rigor trigger, and `/cleanup-light` for everything else, at any file count.
+- **Cleanup of existing FUs** — use `/cleanup-light` (one or more FUs, or a whole `home:` group), unless an FU meets the Heavy-rigor trigger.
 - **Spec exploration / concept work** — use `/brainstorming` first; only invoke /module-sprint once you have a real intent to build.
 
 ## Constraints (hard rules)

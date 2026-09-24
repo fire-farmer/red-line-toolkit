@@ -1,5 +1,5 @@
 ---
-description: Pre-ship module audit pipeline (rev 4). 7-stage matrix audit covering form components × 4 lenses + 10 cross-cutting axes + adversarial layer + SHA-anchored verification. Recon freezes one AUDIT_SHA; the Stage 4.5 verifier checks findings against that commit via git show (not HEAD) to catch snapshot incoherence. Use ONLY for module-completion sweeps with ≥3 form components. For single-page work use /page-design or /page-code; for refactors use /change-heavy; for FU cleanup use /cleanup-light.
+description: Pre-ship module audit pipeline (rev 4). 7-stage matrix audit covering form components × 4 lenses + 10 cross-cutting axes + adversarial layer + SHA-anchored verification. Recon freezes one AUDIT_SHA; the Stage 4.5 verifier checks findings against that commit via git show (not HEAD) to catch snapshot incoherence. Use ONLY for module-completion sweeps with ≥3 form components. For single-page work use /page-design or /page-code; for changes meeting the project's Heavy-rigor trigger use /change-heavy; for every other change or FU cleanup use /cleanup-light.
 argument-hint: <module-name> [--components path1,path2,...] [--skip-cost-prompt]
 allowed-tools: Read, Write, Edit, Bash, Agent
 ---
@@ -254,8 +254,8 @@ If the run never reached Stage 4.5 (early-exit/no-op), emit with `outcome:"no-op
 
 - **<3 form components / heavy components** — use `/page-design` / `/page-code` per page
 - **Single-page or single-component work** — use `/page-design` directly
-- **Refactor of shipped code** — use `/change-heavy`
-- **Single FU cleanup from STACK.md** — use `/cleanup-light`
+- **A change to shipped code** — use `/change-heavy` when it meets the project's Heavy-rigor trigger, `/cleanup-light` otherwise, at any file count
+- **FU cleanup from STACK.md** — use `/cleanup-light` (one or more FUs, or a whole `home:` group), unless an FU meets the Heavy-rigor trigger
 - **Pre-launch hygiene that needs runtime testing** — use `/mobile-audit` for mobile or pair this audit with manual smoke testing
 
 ## Hard constraints

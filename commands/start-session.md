@@ -107,7 +107,7 @@ Emit each that applies (each warning is a `⚠️` line):
 | FU anchor drift (Stage 1 verify:fus reported > 0 drifted) | `⚠️  FU anchor drift: N anchored FU(s) no longer match cited code. Run npm run verify:fus for detail; re-anchor or resolve before relying on those FUs.` |
 | Orphaned FU home (Stage 1 verify:fus reported > 0 stale-home) | `⚠️  Orphaned FUs: N FU(s) homed at a CLOSED phase — the close-time GC was skipped. Re-home each → Standing or an open phase (run /cluster-fus to disposition) before the home lies further. See the STALE-HOME lines for which.` |
 | Promotion candidates exist (Stage 4) | `💡 N In-force lessons have survived 3+ audits — consider promoting at next /end-session audit or running /consolidate-memory.` |
-| FU type-cluster at batch threshold (≥5 same-type, OR ≥2-3 for /cleanup-light) | `💡 N <type> FUs cluster together → /change-heavy (or /cleanup-light) batch-ready. Run /cluster-fus for the full bucketing.` |
+| FU type-cluster at batch threshold (2 or more same-type) | `💡 N <type> FUs cluster together → /cleanup-light batch-ready (or /change-heavy when the batch meets the project's Heavy-rigor trigger). Run /cluster-fus for the full bucketing.` |
 | Standing FU whose trigger may have fired (Nth caller now exists, date passed) | `💡 Standing FU "<x>" trigger may have fired — re-evaluate.` |
 | Push-eligible (Phase-close reached) | `💡 Push-eligible (N commits ahead; phase closed). Consider pushing before starting next effort.` |
 | STACK has empty Open follow-ups + no active phase | `💡 Stack appears complete. Consider running stack-close audit ritual (promote In-force lessons, reset STACK).` |

@@ -96,6 +96,7 @@ If none closed → Lessons audit is optional this session (note for user).
 - FU GC: every phase-local FU homed in the closing campaign must resolve / re-target / promote-to-Standing-FUs.
 - Global-doc update: append the closed campaign's git range (`git log --oneline <first>..<last>`) + 1-para synopsis to `docs/plans/2026-05-31-refactor-overview.md`.
 - Current location re-points to the next campaign's first Phase.
+- Stage 8's `/code-review ultra` reminder, when the campaign was built on a branch other than the default branch.
 
 ---
 
@@ -113,7 +114,8 @@ Options:
 - Add more (rare; flag if > 3)
 
 For each new lesson:
-- Record with `[audits survived: 0]` tag
+- Record with `[audits survived: 0]` tag — **in STACK only.**
+- ⛔ **Do NOT write a permanent-memory file for a new lesson.** A memory file is written at promotion (Stage 6c) and nowhere else. Writing one at filing time bypasses the three-point filter, auto-loads an unearned rule into every future session, and leaves STACK's audit counter measuring a promotion that already silently happened. If a lesson feels obviously fundamental at filing, say so and let Stage 6c's campaign-close override promote it on the record.
 - Pose the test questions:
   - "Articulable as a one-line rule?" (if not, refine or drop)
   - "Applies beyond this stack?" (if no, mark for Archive instead of In force)
@@ -132,7 +134,7 @@ For each KEEP IN FORCE, increment `[audits survived: N]`.
 Surface lessons that pass: (1) `[audits survived: 3+]`, (2) generalizes beyond this stack, (3) articulable as a one-line rule. At a **campaign-close** (Stage 5), also surface obviously-fundamental lessons even at `survived: 1` (campaign-close + clear generalization overrides the count) — and EVERY remaining in-force lesson must resolve to promote / carry-forward / drop (forcing function).
 
 For each candidate, ask: Promote / Keep-in-force / Drop. **On "Promote" — actually WRITE it** (don't just note it):
-- Pick the destination: the relevant existing `memory/feedback_*.md` (e.g., decomp lessons → `feedback_decomp_philosophy.md`, pipeline lessons → `feedback_pipeline_checkpoints.md`) OR a new `memory/feedback_*.md` if no fit. Propose the destination; user confirms/redirects.
+- Pick the destination: the relevant existing `memory/feedback_*.md` (one file per theme, such as decomposition or pipeline lessons) OR a new `memory/feedback_*.md` if no fit. Propose the destination; user confirms/redirects.
 - Append the lesson as a one-line rule (+ a parenthetical pointer to the originating Phase/commit).
 - REMOVE it from STACK (it's now auto-loaded from memory — no longer needs STACK residence).
 
@@ -145,13 +147,13 @@ Ask: "Did anything surface that needs tracking?" Then route each by KIND (per CL
 - **Bug** (wrong/broken/at-risk now): route by **severity**. HIGH/security/deployed-code → STACK "Security / Action required" callout. Medium/low → FU lane, tagged as bug.
 - **FU** (improvement): apply the 2-week filter (if no — and no concrete trigger will resurface it (→ Standing) — don't record), then tag `[type · pipeline] what — fix-shape — home: <Campaign>/<Phase>.<Step>|Standing — sev {anchor: <file> :: /pattern/}` (+ optional `gates:` `blocked-by`/`better-with`):
   - `type` from the taxonomy (type-design, silent-failure, etc.)
-  - `pipeline` = `/cleanup-light` or `/change-heavy` (borderline → heavier); test-coverage & dedup FUs get the 5-second honesty check (test layer + callsite count) so the tag is true at filing
+  - `pipeline` = `/change-heavy` only when the FU meets the project's CLAUDE.md Heavy-rigor trigger, else `/cleanup-light` (borderline → heavier); test-coverage & dedup FUs get the 5-second honesty check (test layer + callsite count) so the tag is true at filing
   - `home` = fully-qualified address `<Campaign>/<Phase>.<Step>` (e.g. `Sweep/1.1` → STACK phase-local) or `Standing` (→ Standing-FUs.md)
   - `anchor` = machine-verifiable citation: `{anchor: src/lib/x.ts :: /PATTERN/}` (`/.../` = always regex; the pattern must not contain `/`), a bare literal, or `{anchor: manual}` for architectural/absence FUs. New rows SHOULD anchor — `npm run verify:fus` flags drift.
 
-**Then cluster (the batch-readiness report):** group this session's new FUs (+ optionally re-scan existing) by `type`. For each type-cluster, report the count and batch-readiness: *"type-design now ×9 → /change-heavy batch-ready; silent-failure ×4 → /cleanup-light."* (≥5 same-type → /change-heavy; 2-4 → /cleanup-light.) This is the lightweight inline version of `/cluster-fus` — surfaces batches forming so cleanup stays tractable.
+**Then cluster (the batch-readiness report):** group this session's new FUs (+ optionally re-scan existing) by `type`. For each type-cluster, report the count and batch-readiness: *"type-design now ×9 → /cleanup-light batch-ready; silent-failure ×4 (touches auth) → /change-heavy."* (2 or more same-type is a batch; its pipeline is the project's Heavy-rigor trigger, not its size.) This is the lightweight inline version of `/cluster-fus` — surfaces batches forming so cleanup stays tractable.
 
-**6e. Recommendation-calibration review.** Read `memory/recommendation-calibration.md`. If this session produced any recommendation flips (I recommended an option, Scott questioned it, the rec changed), append one row each with a root-cause tag. Then scan unreviewed rows: if ≥3 share a miscalibration tag (`scope-reflex-overdefer` / `under-weighted-evidence` / `risk-aversion`) → propose hardening `memory/feedback_scope_calibration.md`; if any `gold-plating-overcorrect` → propose relaxing it back toward the YAGNI guard; if `genuine-new-info` dominates → calibration is fine, mark reviewed. Lightweight — skip silently if the log gained no new rows this session.
+**6e. Recommendation-calibration review.** Read `memory/recommendation-calibration.md`. If this session produced any recommendation flips (I recommended an option, the user questioned it, the rec changed), append one row each with a root-cause tag. Then scan unreviewed rows: if ≥3 share a miscalibration tag (`scope-reflex-overdefer` / `under-weighted-evidence` / `risk-aversion`) → propose hardening `memory/feedback_scope_calibration.md`; if any `gold-plating-overcorrect` → propose relaxing it back toward the YAGNI guard; if `genuine-new-info` dominates → calibration is fine, mark reviewed. Lightweight — skip silently if the log gained no new rows this session.
 
 ---
 
@@ -175,7 +177,7 @@ Edit STACK.md with all changes collected in Stages 4–6:
 
 Show the diff before writing. AskUserQuestion confirms each major edit.
 
-**Post-write verify gate (run ALWAYS after writing STACK — not just when an anchor was filed):**
+**Post-write verify gate (run ALWAYS after writing STACK — not just when an anchor was filed).** The `!` line below runs when /end-session starts, before anything is written, so its output shows the previous STACK. After writing, run the same command via Bash (without the leading `!` and backticks) and apply the check below to that output:
 - !`if [ -f package.json ] && npm run 2>/dev/null | grep -q 'verify:fus'; then npm run verify:fus 2>&1 | grep -E '^(DRIFT|STALE-HOME|FU anchors:)'; else echo "FU integrity: n/a — no verify:fus script (light project)"; fi`
 - It MUST report **0 drifted AND 0 stale-home** before Stage 9. A drifted anchor = a typo'd citation (cheapest to fix now). **`stale-home > 0` is a HARD STOP:** a phase was flipped to `[x]` but FU(s) are still homed there — the phase-close GC was incomplete. Re-home each flagged FU (→ `Standing` or an open phase; the `STALE-HOME` lines name which), re-run until `0 stale-home`, THEN commit. Never commit a close that leaves orphans — that is exactly the failure this gate exists to stop.
 
@@ -183,7 +185,7 @@ Show the diff before writing. AskUserQuestion confirms each major edit.
 
 ## Stage 8 — Push-eligibility check
 
-Per [`feedback_tier_push_gate.md`](memory/feedback_tier_push_gate.md) (legacy filename): don't recommend push mid-Phase; wait for Phase-close.
+Don't recommend a push mid-Phase; wait for Phase-close.
 
 - !`git rev-list --count origin/main..HEAD`
 - Read STACK's Phases section — is the active Phase closed?
@@ -194,6 +196,15 @@ Output one of:
 - **End-of-effort:** "Push state: N commits ahead; entire stack closed — push, then run stack-close audit ritual (separate command, TBD)."
 
 Record push state in Current location (Stage 7) — it's part of the handoff.
+
+**Campaign close on a branch — `/code-review ultra` before the merge.** Current branch, then the default branch:
+- !`git rev-parse --abbrev-ref HEAD; d=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##'); echo "${d:-unknown}"; [ -n "$d" ] && { git merge-base --is-ancestor HEAD "origin/$d" && echo merged || echo "not merged"; }`
+
+The output is the current branch, the default branch, and whether HEAD is already in the default branch. Add the line below to the output when the current branch isn't the default branch and either of two things holds. Either Stage 5 flagged a campaign close, or Current location already carries this line and the check reads `not merged`. (A default of `unknown` counts as "isn't" unless the current branch is `main` or `master`.)
+
+*"Before merging `<branch>` into `<default>`, run `/code-review ultra` yourself. It reviews this branch against `<default>` in the cloud, it's billed, and only you can start it. Merge once its findings are dispositioned."*
+
+Carry the line in Current location's push state, so every later sync repeats it until the check reads `merged`. Then drop it. Claude never launches `/code-review ultra`, whether through Bash, a hook or anything else.
 
 ---
 

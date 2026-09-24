@@ -20,7 +20,7 @@ Locate the Module Spec:
 - If not found, surface to user and pause
 
 Run the 3-item gate (cheatsheet §5):
-1. **Tier check** — confirm pipeline-worthy (3+ files, new abstraction, or risk surface)
+1. **Rigor check** — confirm pipeline-worthy: a new page, a new abstraction, or a risk surface under the project's CLAUDE.md Heavy-rigor trigger
 2. **Risk surface check** — engage security-asymmetric upgrade if RLS / auth / Stripe / exports / financial calc touched
 3. **Existing-primitive check** — note relevant CSS / component families to grep in Stage 1
 

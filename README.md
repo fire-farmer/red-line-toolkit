@@ -14,8 +14,8 @@ These are the real commands we run inside our AI coding agent — a set of inter
 
 | Command | What it does | Guide |
 |---|---|---|
-| `/change-heavy` | 6-stage pipeline for high-rigor refactors: plan → parallel critics → adjudicate → implement → simplify → review | [guide](https://redlinedigital.dev/guides/change-heavy/) |
-| `/cleanup-light` | Light single-item cleanup: scoped critics + security-asymmetric adjudication, auto-escalates if scope blows up | [guide](https://redlinedigital.dev/guides/cleanup-light/) |
+| `/change-heavy` | 6-stage pipeline for changes that reach your high-risk areas or add a new data model / API shape, at any file count: plan → parallel critics (with a Fable plan critic) → adjudicate → implement → simplify → review, with a decorrelated Fable audit | [guide](https://redlinedigital.dev/guides/change-heavy/) |
+| `/cleanup-light` | The standard pipeline for every other change, at any file count: PLAN + Fable plan critique when warranted, scoped and conditional specialist critics, security-asymmetric adjudication, a Fable review on every run; escalates when a change meets the heavy trigger | [guide](https://redlinedigital.dev/guides/cleanup-light/) |
 | `/cluster-fus` | Re-buckets a follow-up backlog by type and surfaces batch-ready clusters | [guide](https://redlinedigital.dev/guides/cluster-fus/) |
 | `/module-build` | Apex pipeline for a new module: concept → architecture sketch → phased page breakdown, locked as a spec | [guide](https://redlinedigital.dev/guides/module-build/) |
 | `/module-sprint` | Walks a locked spec through the page pipeline (design → code → implement) with locks between stages | [guide](https://redlinedigital.dev/guides/module-sprint/) |
@@ -55,14 +55,18 @@ Then `/change-heavy`, `/module-audit`, etc. are available in any project.
 The pipelines compose other tools. Without them, the stages that call them will no-op or fail — install the companions to get the designed behavior:
 
 **Companion plugins** (from the official marketplace — `/plugin marketplace add anthropics/claude-code` then install):
-- **`superpowers`** — `writing-plans`, `executing-plans` (the plan/execute spine of `/change-heavy`)
-- **`pr-review-toolkit`** — `code-reviewer`, `review-pr`, `silent-failure-hunter`, and the specialized review agents
+- **`superpowers`** — `writing-plans`, `subagent-driven-development` (the plan/execute spine of `/change-heavy`)
+- **`pr-review-toolkit`** — `code-reviewer`, `review-pr`, `silent-failure-hunter`, `type-design-analyzer`, `pr-test-analyzer`, and the specialized review agents
 - **`feature-dev`** — its `code-reviewer` (the bugs-and-quality critic lens)
 
 **Built-in skills** — `/simplify` and `/security-review` (ship with Claude Code).
 
+**A second model family** — the decorrelated review seats dispatch `model: fable` (or `model: opus` when your session itself runs on Fable), so a different model audits what the orchestrator wrote.
+
+**Optional stack skills** — the change pipelines load your framework's, database's and payment provider's best-practice skills before planning when they're installed, and skip them when they aren't.
+
 **The doc-method** — the session and cleanup commands assume a tiny, framework-free convention for keeping project state legible. Starter templates are in [`templates/`](templates/):
-- `CLAUDE.md` — the rules: the always-on constitution for how the agent works in your repo
+- `CLAUDE.md` — the rules: the always-on constitution for how the agent works in your repo, including the Heavy-rigor trigger (your high-risk areas) and the filing bar
 - `STACK.md` — the ledger: live state, the session handoff, and the in-force **lessons** (each carries an `[audits survived: N]` counter; `/end-session` promotes one to permanent memory once it passes the three-point filter — survived 3+ audits, generalizes, one-line rule)
 - `GLOBAL-PLAN.md` — the route: the campaigns and their phases, in order. `STACK.md`'s "Current location" points into it
 - `Standing-FUs.md` — the parking lot: the cross-cutting follow-up backlog `/cluster-fus` re-buckets

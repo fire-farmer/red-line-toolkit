@@ -21,7 +21,7 @@ Copy these from [`templates/`](templates/) into your repo and fill in the blanks
 
 | File | Layer | What it does |
 |---|---|---|
-| [`CLAUDE.md`](templates/CLAUDE.md) | **the rules** | How you want the agent to work — scope, the build/test gate, security posture. Biggest return for the least effort. |
+| [`CLAUDE.md`](templates/CLAUDE.md) | **the rules** | How you want the agent to work — scope, the build/test gate, security posture, and which areas count as high-risk (that list picks the heavy pipeline). Biggest return for the least effort. |
 | [`STACK.md`](templates/STACK.md) | **the ledger** | Live state + the session handoff + the in-force lessons. This one file kills most of the drift. |
 | [`Standing-FUs.md`](templates/Standing-FUs.md) | **the parking lot** | The cross-cutting stuff you keep noticing but can't do now. |
 | [`GLOBAL-PLAN.md`](templates/GLOBAL-PLAN.md) | **the route** | The campaigns and their phases, in order — once the work spans more than a couple of sessions. |

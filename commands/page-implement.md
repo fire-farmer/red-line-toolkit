@@ -25,7 +25,7 @@ Run the 3-item gate (cheatsheet §5). Note risk surface engagement for downstrea
 
 ## Stage 1 — Execute
 
-Follow the locked plan. Create/modify files exactly as specified. **No scope creep** — anything beyond plan goes to FOLLOW-UPS in STACK.md, not silently into the diff.
+Follow the locked plan. Create/modify files exactly as specified. **No silent scope creep** — anything beyond the plan passes the filing bar (CLAUDE.md "Scope discipline") instead of going quietly into the diff: fix it here when it's the same class as the plan's work; file it only with a named reason it can't be done now and a pass of the 2-week filter; otherwise drop it with one line in the commit body.
 
 If the plan is missing details (exact file paths, edge cases), kick back to `/page-code` rather than guessing.
 
@@ -69,7 +69,7 @@ Apply selected verdicts. Then invoke the `simplify` skill on modified files. App
 **After `/simplify` completes — sibling-pattern flagging:** Explicitly enumerate any sibling patterns caught that were NOT in the original code plan. For each:
 - file:line of the sibling
 - Type of pattern (e.g., "same anti-pattern, different selector")
-- Whether absorbed in this pipeline or deferred to STACK.md as a new FU
+- Its outcome under the filing bar: **absorbed in this pipeline** when it's the same class (the default); **filed** only with a named reason and a pass of the 2-week filter; otherwise **dropped** with one line in the commit body
 
 Append findings to `memory/feedback_fu_body_verification.md` under the **"Sibling-pattern miss log"** section. Empirical signal for whether sibling-pattern audit should move upstream (Refinement #2 in `docs/plans/2026-05-14-refactor-pipeline-refinements.md`).
 
@@ -91,17 +91,23 @@ Also run manual checks from the code plan's test scenarios. Verify lint count pr
 
 Invoke `/pr-review-toolkit:review-pr` via SlashCommand tool for a comprehensive final pass. This includes code-reviewer, silent-failure-hunter, type-design-analyzer, comment-analyzer, pr-test-analyzer, and code-simplifier.
 
+**Decorrelated Fable audit (always).** In the same turn as the pr-review dispatch, in parallel, dispatch a Fable audit of the implemented diff via the Task tool on the decorrelated family — **`model: fable`**, or `model: opus` if the orchestrator is Fable. Pass the locked code plan's path. Prompt:
+
+> *"Decorrelated audit of this implemented diff (`git diff HEAD`, plus staged). Locked code plan: `<absolute path>` — read it for the intended behavior. You did not write this code — audit it with fresh priors. Focus ONLY on: correctness, data-integrity, logic errors, silent behavior changes vs. what the plan intended, accessibility, and duplication — for every new CSS class, custom property, color-mix recipe or inline style object in the diff, search the project's stylesheets and components for an existing equivalent and flag near-duplicates, naming the existing one. If a defect class in this diff will recur and nothing checks for it, recommend a check (what it would catch) — a recommendation, not a finding. Do NOT review security and do NOT restyle. Output `file:line — severity — issue — rationale`, or `CLEAN`."*
+
+Capture its output labeled `fable-decorrelation` as a findings source for Stage 7. **Fable finds; it never fixes.** A recommended check goes to the user at the Stage 7 pause as its own question (`Build it` · `Decline`); it's built only on a yes (CLAUDE.md checking-script rule).
+
 ---
 
-## Stage 7 — Adjudicate pr-review findings (conditional)
+## Stage 7 — Adjudicate pr-review and Fable findings (conditional)
 
-If pr-review-toolkit surfaces no findings: pipeline complete, jump to Done.
+If pr-review-toolkit and the Fable audit both surface no findings and Fable recommended no check: pipeline complete, jump to Done. No findings but a recommended check → skip adjudication and still ask the check question (`AskUserQuestion`: `Build it` · `Decline`) before Done.
 
 If findings exist: dispatch The Adjudicator on those findings. Apply security-asymmetric upgrade.
 
 Present verdicts. Use `AskUserQuestion`:
 
-- **Question:** *"pr-review-toolkit surfaced [N] findings. Which to absorb?"*
+- **Question:** *"Review surfaced [N] findings ([N1] pr-review + [N2] Fable). The Adjudicator marked them [K] KEEP, [D] DITCH, [M] MODIFY. Which to absorb?"*
 - **Options:**
   - `Absorb all KEEP + MODIFY` → revise, re-verify (max 1 cycle)
   - `Absorb none — pipeline complete`
@@ -149,8 +155,8 @@ echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"p
 
 ## Notes for Claude executing this command
 
-- **Scope discipline is mandatory.** Anything beyond the locked plan goes to STACK.md FOLLOW-UPS, not silently into the diff.
-- **Mandatory pauses** at Stage 3 (verdicts) and Stage 7 (pr-review verdicts, if findings).
+- **Scope discipline is mandatory.** Anything beyond the locked plan passes the filing bar (a row needs **both** a named reason **and** a pass of the 2-week filter) — never silently into the diff.
+- **Mandatory pauses** at Stage 3 (verdicts) and Stage 7 (pr-review and Fable verdicts if there are findings, or the check question if Fable recommended one).
 - **Debug folded into Stage 5** — verify isn't "done" until build passes.
 - **Max 1 cycle from pr-review** to prevent revise-loop spirals.
 - **Pass `model:` on all critic dispatches.**

@@ -57,19 +57,19 @@ Verify every claim in the commit message is supported by an actual change in the
 
 ### CHECK 2 — Scope discipline
 
-For each changed line, ask: does this trace to the inferred task?
-- Refactoring beyond requested scope → WARN
+For each changed line, ask: does this trace to the inferred task? The same fix applied at another site of the same class traces to it (scope is the class, not the cited site) — don't WARN on that.
+- Refactoring beyond requested scope (a different class of work) → WARN
 - Renames in files not central to the task → WARN
 - Drive-by formatting changes → WARN
 - New abstractions not requested → WARN
 
 ### CHECK 3 — Follow-up discipline
 
-Verify orphan observations are properly captured:
-- New `// TODO:` comments in the diff → should be in STACK.md FOLLOW-UPS, not silently in code
-- New `// FIXME:` or `// HACK:` comments → same
-- STACK.md updated with observations made during the work?
-- Did the work surface anything in conversation that didn't make it to STACK.md?
+Verify every observation made during the work got exactly one filing-bar outcome (CLAUDE.md "Scope discipline"): fixed in this change, filed with a named reason, or dropped with one line in the commit body.
+- New `// TODO:`, `// FIXME:` or `// HACK:` comments in the diff → WARN; each is an observation hidden in code instead of getting an outcome
+- An FU filed during the work with no named reason it couldn't be done now (a product decision, a real risk, an abstraction decision) → WARN
+- A successor FU (the unfinished remainder of work this change did) filed without that reason → WARN
+- Did the work surface anything in conversation that got no outcome — neither fixed, filed nor named as dropped in the commit body? → WARN
 
 ---
 
@@ -120,4 +120,4 @@ Output final verdict + drafted message (or original for retro modes). User decid
 - **Diagnostic only.** Never auto-fix commit messages or auto-unstage scope-creep. Surface findings, let user act.
 - **Zero-argument default** should work 90% of the time via auto-inference from conversation context + STACK.md.
 - **Range mode is highest-leverage** — pre-PR sweep before opening a PR.
-- **Anchor to CLAUDE.md** "Commit truthfully" + "Scope discipline" + STACK.md FOLLOW-UPS convention.
+- **Anchor to CLAUDE.md** "Commit truthfully" + "Scope discipline" (the filing bar) + the STACK.md FU conventions.

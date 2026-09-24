@@ -51,13 +51,13 @@ The layers are inert documents. These routines move work between them — and al
 
 **A · Session bookends.** Open reads the ledger and restates where you are. Close writes the handoff, files new follow-ups, runs the lessons audit, and commits. These maintain every file above. *(→ `/start-session`, `/end-session`.)*
 
-**B · Follow-up lifecycle.** On discovery, route by kind — a bug by severity, a nice-to-have through a relevance filter — record it as local (Stack) or standing (parking lot), batch like items together, execute, and garbage-collect at phase close so nothing is orphaned. *(→ `/cluster-fus`, and the `/cleanup-light` · `/change-heavy` pipelines.)*
+**B · Follow-up lifecycle.** On discovery, route by kind — a bug by severity, a nice-to-have through a relevance filter — record it as local (Stack) or standing (parking lot), batch like items together, execute, and garbage-collect at phase close so nothing is orphaned. Anything noticed *during* a change passes a filing bar first: fixed now if it's the same class as the change, filed only if it passes the relevance filter *and* has a named reason it can't wait, otherwise dropped with a line in the commit. *(→ `/cluster-fus`, and the `/cleanup-light` · `/change-heavy` pipelines, picked by risk, not size.)*
 
 **C · Lesson ratchet.** A lesson earns a tally each time it proves useful. Clear the bar — recurs enough (survives **3+ audits**), generalizes beyond this project, states in **one line** — and it graduates into permanent Memory, loaded forever after. *(→ `/end-session`'s lessons audit.)*
 
 ## The one constraint
 
-**The process must stay lighter than the problem it solves** — scaled to the stakes, not minimized for its own sake. Heavier problems (money, security, data) earn more ceremony; trivial ones earn less. If tracking a thing costs more than the thing is worth, you don't track it.
+**The process must stay lighter than the problem it solves** — scaled to the stakes, not minimized for its own sake. Heavier problems (money, security, data) earn more ceremony; trivial ones earn less. That's how a change picks its pipeline, too: by the risk it touches, never by its file count. If tracking a thing costs more than the thing is worth, you don't track it.
 
 > **Six layers · three processes · one constraint.**
 
