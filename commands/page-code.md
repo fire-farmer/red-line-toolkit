@@ -1,8 +1,11 @@
 ---
 description: Per-page code planning pipeline. Runs 3 parallel critics (structure + security + performance) against an initial code plan, adjudicates with security-asymmetric upgrade, revises, and locks. Use after /page-design locks a design plan.
-argument-hint: [page name from locked design plan]
-allowed-tools: Read, Write, Task, AskUserQuestion, Skill
+argument-hint: "[page name from locked design plan]"
+allowed-tools: Read, Write, Edit, Bash, Agent, Skill
+disallowed-tools: AskUserQuestion
 ---
+
+> **Gates follow `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`.** A programming call is decided and listed in the run's report; only that doc's tier-3 items are the owner's.
 
 # /page-code
 
@@ -19,8 +22,8 @@ Locate the locked design plan:
 - Confirm `status: locked`
 - If not locked, refuse and tell user to lock the design plan first
 
-Run the 3-item gate (cheatsheet §5):
-1. **Rigor check** — confirm pipeline-worthy: a new page, a new abstraction, or a risk surface under the project's CLAUDE.md Heavy-rigor trigger
+Run the 3-item gate (`${CLAUDE_PLUGIN_ROOT}/reference/prompting-cheatsheet.md` § Pre-Flight Scope Check):
+1. **Rigor check** — confirm pipeline-worthy: a new page, a new abstraction, or a change that meets the project's CLAUDE.md Heavy-rigor trigger
 2. **Risk surface check** — engage security-asymmetric upgrade if RLS / auth / Stripe / exports / financial calc touched
 3. Existing-primitive check
 
@@ -33,22 +36,17 @@ Read design plan + CLAUDE.md + STACK.md. Draft:
 - **Per-file changes** — what changes, with rationale
 - **Data flow** — Zustand store interactions, lib/api service modules, localStorage persistence with `createJSONStorage`
 - **Security boundaries** — RLS policy updates, tier checks (server-side, not client-only), input validation, XSS vectors
+- **Effort** — the effort of each agent `/page-implement` dispatches (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort)
 - **Performance considerations** — lazy-loading candidates (`next/dynamic` for heavy modals), memoization (React.memo + parent `useCallback`), bundle impact
 - **Test plan** — **if the change touches `src/lib/**` (billing / financial math / pure logic), the plan MUST name the Vitest characterization test file (`*.test.ts`, colocated) and the exact input/output pair to capture** — per CLAUDE.md's mandate that new `src/lib` modules ship with characterization tests. For UI-only changes, list what to verify manually. (Vitest covers `src/lib`; the jsdom project covers component `*.test.tsx`.)
 
-Surface the draft. Use `AskUserQuestion`:
-
-- **Question:** *"Initial code plan ready. Send to critics?"*
-- **Options:**
-  - `Approve — proceed to critique` → continue
-  - `Redirect — revise plan` → take redirection and re-draft
-  - `Exit — defer this page` → stop
+Surface the draft and send it to the critics (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`).
 
 ---
 
 ## Stage 2 — Parallel critique (3 critics)
 
-Dispatch THREE critics in parallel via the Task tool — **a single message with three tool calls**. Pass `model:` matching orchestrator.
+Dispatch THREE critics in parallel via the Agent tool — **a single message with three tool calls**. Pass `model:` matching orchestrator.
 
 - **Critic 2a — structure critic (general-purpose):**
   > *"Review this code plan against CLAUDE.md project conventions. Plan path: `<absolute path>`. Verify: component patterns (modals in feature folders, shared in components/shared), file size guidelines (page ≤100, API route ≤150, util ≤200, component ≤250, hook ≤150, store ≤300), Zustand store organization (one per file, persist + createJSONStorage), lib/api service module patterns (components never call fetch directly), naming conventions. Output: `file:section — severity — issue — recommendation`."*
@@ -65,21 +63,17 @@ Collect and concatenate.
 
 ## Stage 3 — Adjudicate (security asymmetric upgrade)
 
-Dispatch The Adjudicator via Task tool. Apply the security-asymmetric rule: security findings can escalate MEDIUM → HIGH; nothing else can.
+Dispatch The Adjudicator (`red-line-toolkit:the-adjudicator`) via the Agent tool. Apply the security-asymmetric rule: security findings can escalate MEDIUM → HIGH; nothing else can.
 
-Present verdicts verbatim. Use `AskUserQuestion`:
-
-- **Question:** *"The Adjudicator marked [N] critiques. Which to absorb?"*
-- **Options:**
-  - `Absorb all KEEP + MODIFY`
-  - `Absorb none — keep initial plan`
-  - `Let me list specific CRITIQUE_IDs`
+Absorb every KEEP and MODIFY verdict (tier 1); the ditched ones are listed in the report so the owner can pull one back.
 
 ---
 
 ## Stage 4 — Revise + lock
 
-Apply verdicts. Write to `docs/plans/YYYY-MM-DD-module-<slug>-page-<page-slug>-code.md`:
+**Lock without asking** (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`): write the revised plan with `status: locked` and list every verdict absorbed or ditched in the report. A plan whose change meets the Heavy-rigor trigger locks the same way. A plan item that is the owner's beyond the locked design (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` tier 3) is parked per § Parking, and the rest locks.
+
+Apply the absorbed verdicts. Write to `docs/plans/YYYY-MM-DD-module-<slug>-page-<page-slug>-code.md`:
 
 ```yaml
 ---
@@ -101,10 +95,10 @@ Summarize:
 - Any security findings absorbed
 - Next step: invoke `/page-implement <page-name>` against the locked code plan
 
-**Effectiveness telemetry — append on lock.** Via Bash, append one JSON line to `~/.claude/metrics.jsonl` (append-only; create if absent). `keep/ditch/modify` come straight from the Stage 3 Adjudicator verdict block.
+**Effectiveness telemetry — append on lock.** Via Bash, append one JSON line to `~/.claude/metrics.jsonl` (append-only; create if absent). `keep/ditch/modify` come straight from the Stage 3 Adjudicator verdict block; `owner_parked` counts the `owner decision` rows this run parked (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` § Parking).
 
 ```bash
-echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"page-code\",\"outcome\":\"locked\",\"keep\":<k>,\"ditch\":<d>,\"modify\":<m>}" >> ~/.claude/metrics.jsonl
+echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"page-code\",\"outcome\":\"locked\",\"keep\":<k>,\"ditch\":<d>,\"modify\":<m>,\"owner_parked\":<n>}" >> ~/.claude/metrics.jsonl
 ```
 
 **Adjudicator-effectiveness telemetry — emit alongside the row above.** Stage 3 dispatches the-adjudicator (read-only), so the orchestrator emits its row on its behalf — same field shape as the other callers (page-design / change-heavy / cleanup-light / module-audit), keeping the unified cross-caller adjudicator stream complete.
@@ -119,5 +113,5 @@ echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"p
 
 - **Single critique cycle.** If implementation surfaces plan errors, kick back via fresh `/page-code`.
 - **Security asymmetric upgrade is mandatory** when risk surface engages.
-- **Two mandatory pauses** at Stage 1→2 and Stage 3→4.
+- **No stops.** The lock is act-and-report; only a design change beyond the locked design is parked for the owner.
 - **Code plan must be specific enough for mechanical implementation.** If exact file paths or test scenarios are missing, the plan is incomplete — revise before locking.

@@ -1,7 +1,7 @@
 ---
-description: Start-of-session orientation. Reads STACK.md (Current location = the handoff) + Standing-FUs.md, checks for multi-session divergence, verifies working tree, surfaces batch-ready clusters + promotion candidates + FU integrity (anchor drift + orphaned-phase homes), outputs structured orientation brief. Restates current task tree per CLAUDE.md mandate. Read-only.
-argument-hint: [optional]
-allowed-tools: Read, Bash
+description: Start-of-session orientation. Reads STACK.md (Current location = the handoff) + Standing-FUs.md, checks for multi-session divergence, verifies working tree, surfaces batch-ready clusters + promotion candidates + FU integrity (anchor drift + orphaned-phase homes), outputs structured orientation brief, then asks the owner the ledger's owner questions. Restates current task tree per CLAUDE.md mandate. Read-only.
+argument-hint: "[full]"
+allowed-tools: Read, Bash, AskUserQuestion
 ---
 
 # /start-session
@@ -10,7 +10,7 @@ You are running the **/start-session** orientation. The user has just opened a n
 
 User's invocation argument: **$ARGUMENTS**
 
-**Core principle:** This command is **READ-ONLY**. Never modifies STACK.md, Standing-FUs.md, or any project state. Its only output is a structured orientation brief in the chat.
+**Core principle:** This command is **READ-ONLY**. Never modifies STACK.md, Standing-FUs.md, or any project state. Its output is a structured orientation brief in the chat and, in a migrated project, the owner questions of Stage 5.5, the one place it asks.
 
 ---
 
@@ -18,13 +18,17 @@ User's invocation argument: **$ARGUMENTS**
 
 - Read `STACK.md` (canonical live state — **Current location IS the handoff** written by the last /end-session)
 - Read `Standing-FUs.md` (cross-cutting backlog) — scan for any whose trigger may have fired
-- Skim `docs/plans/2026-05-31-refactor-overview.md` (global scope) only if STACK's current campaign is unclear
+- Skim `docs/plans/<YYYY-MM-DD>-refactor-overview.md` (global scope) only if STACK's current campaign is unclear
 - !`ls -la STACK.md Standing-FUs.md 2>/dev/null || true`
+- !`node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" mode 2>&1 || echo "LEDGER: unavailable — ledger.mjs failed; run it manually"`
+- !`node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" report 2>&1 || echo "⚠️  ledger.mjs report failed — run it manually: node ${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs report"`
+
+**Ledger.** `LEDGER: migrated` → follow `${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § Start: it replaces this stage's two reads, Stage 4, the head of Stage 5 and Stage 6. `LEDGER: unavailable`, a line starting `LEDGER ERROR`, or a failed report → emit `⚠️  ledger.mjs didn't run — the ledger is unchecked this session. Run it manually; /end-session halts until it runs or you confirm this project isn't migrated.` A line starting `LEDGER: not migrated` or `LEDGER: not a stack project` prints one report line; ignore it. Any other output, or no mode line, is treated as `LEDGER: unavailable`.
 
 **FU integrity** — flags (a) any anchored FU whose cited code moved/was deleted (drift = stale location citation) and (b) any FU homed at a CLOSED phase (`stale-home` = the close-time GC was skipped). Read-only report:
-- !`if [ -f package.json ] && npm run 2>/dev/null | grep -q 'verify:fus'; then npm run verify:fus 2>&1 | grep -E '^(DRIFT|STALE-HOME|FU anchors:)' || echo "⚠️  verify:fus emitted no summary — integrity check may be broken; run it manually: npm run verify:fus"; else echo "FU integrity: n/a — no verify:fus script (light project, plain-bullet FUs)"; fi`
+- !`if [ -f package.json ] && npm run 2>/dev/null | grep -q 'verify:fus'; then npm run verify:fus 2>&1 | grep -E '^(DRIFT|STALE-HOME|FU anchors:)' || echo "⚠️  verify:fus emitted no summary — integrity check may be broken; run it manually: npm run verify:fus"; else echo "FU integrity: n/a — no verify:fus script (a migrated project's ledger.mjs audit checks anchors; a light project has plain-bullet FUs)"; fi`
 
-If STACK.md doesn't exist → output: "No STACK.md found. No active major effort. Suggest running /brainstorm or /module-build to start one."
+If STACK.md doesn't exist → output: "No STACK.md found. No active major effort. Suggest running /module-build to start one, or the `superpowers:brainstorming` skill to explore an open-ended idea first."
 
 There is no separate handoff file — the previous session's handoff is STACK's Current location. To see the *prior* handoff (forensic), use `git show <sha>:STACK.md`.
 
@@ -33,7 +37,7 @@ There is no separate handoff file — the previous session's handoff is STACK's 
 ## Stage 2 — Working tree + git divergence
 
 - !`git status --porcelain`
-- !`git log origin/main..HEAD --oneline | head -20`
+- !`echo "ahead of upstream $(git rev-parse --abbrev-ref @{u} 2>/dev/null || echo '(none)'): $(git rev-list --count @{u}..HEAD 2>/dev/null || echo n/a) · ahead of origin/main: $(git rev-list --count origin/main..HEAD 2>/dev/null || echo n/a)"`
 - !`git log -n 1 --format="%H %s"`
 
 Capture:
@@ -80,7 +84,7 @@ IN-FORCE LESSONS (<count>):
 <bullet list of all In-force lessons verbatim from STACK, including [audits survived: N] tags>
 
 PROMOTION CANDIDATES:
-<list any lessons with [audits survived: 3+] — these are ripe for /consolidate-memory or memory file entry>
+<list any lessons with [audits survived: 3+] — these are weighed for promotion at the next /end-session lessons audit>
 
 ═══════════════════════════════════════════════════════
 ```
@@ -106,11 +110,23 @@ Emit each that applies (each warning is a `⚠️` line):
 | Plan file referenced in STACK doesn't exist | `⚠️  Broken plan link: <path>. The active phase's plan file was renamed or deleted.` |
 | FU anchor drift (Stage 1 verify:fus reported > 0 drifted) | `⚠️  FU anchor drift: N anchored FU(s) no longer match cited code. Run npm run verify:fus for detail; re-anchor or resolve before relying on those FUs.` |
 | Orphaned FU home (Stage 1 verify:fus reported > 0 stale-home) | `⚠️  Orphaned FUs: N FU(s) homed at a CLOSED phase — the close-time GC was skipped. Re-home each → Standing or an open phase (run /cluster-fus to disposition) before the home lies further. See the STALE-HOME lines for which.` |
-| Promotion candidates exist (Stage 4) | `💡 N In-force lessons have survived 3+ audits — consider promoting at next /end-session audit or running /consolidate-memory.` |
+| Promotion candidates exist (Stage 4) | `💡 N In-force lessons have survived 3+ audits — the next /end-session lessons audit weighs them for promotion.` |
 | FU type-cluster at batch threshold (2 or more same-type) | `💡 N <type> FUs cluster together → /cleanup-light batch-ready (or /change-heavy when the batch meets the project's Heavy-rigor trigger). Run /cluster-fus for the full bucketing.` |
 | Standing FU whose trigger may have fired (Nth caller now exists, date passed) | `💡 Standing FU "<x>" trigger may have fired — re-evaluate.` |
 | Push-eligible (Phase-close reached) | `💡 Push-eligible (N commits ahead; phase closed). Consider pushing before starting next effort.` |
 | STACK has empty Open follow-ups + no active phase | `💡 Stack appears complete. Consider running stack-close audit ritual (promote In-force lessons, reset STACK).` |
+
+---
+
+## Stage 5.5 — Owner questions (migrated projects)
+
+The owner is at hand when a session starts, so the Stage 1 report's WAITING ON OWNER rows are asked now with `AskUserQuestion`, not left for a triage (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` § Asked live and § Asking the question). Skip this stage when the report lists none, and in a project that isn't migrated.
+
+- One question per row, the FU ID as its header: the row's question, with what it's about in a few words. Options: `<the row's recommended pick> (Recommended)` · `Keep parked`. The pick's description carries the row's mockup path or description, and "Other" takes any other ruling: another pick, "no", or "not until <date or Campaign/step>". A row with no `recommended:` pick (the report warns on it) gets the pick Claude would make from its evidence, and its description says so.
+- At most four questions a call, a row that blocks NEXT first, then by FU ID. More go to the next call; none is dropped.
+- Then print one line per row, `FU-<n> → <answer>`, and write nothing: the run that picks the row applies the ruling, or `/end-session` does (`${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § End, 6L-c).
+
+(Owner-decision rows left for a triage otherwise wait many sessions for one.)
 
 ---
 
@@ -128,9 +144,9 @@ Ready to proceed. Recommended first action: <verbatim from STACK Current locatio
 
 | Situation | Handling |
 |---|---|
-| STACK.md doesn't exist | Output: "No active stack. Start a major effort with /brainstorm, /module-build, or /change-heavy." Exit. |
+| STACK.md doesn't exist | Output: "No active stack. Start a major effort with /module-build or /change-heavy, or explore an open-ended idea with the `superpowers:brainstorming` skill." Exit. |
 | Git not initialized or no commits | Output: "Repo state unusual. Verify git state before proceeding." Exit. |
-| `git log origin/main..HEAD` fails (no upstream configured) | Skip push-state checks. Note absence in brief. |
+| Stage 2's ahead-of line prints `(none)` or `n/a` (no upstream or no `origin/main`) | Skip push-state checks. Note absence in brief. |
 | STACK.md exists but is malformed (no Current location section) | Output: "STACK.md missing required sections. Run /end-session in last working session or repair manually." Exit. |
 
 ---
@@ -142,8 +158,9 @@ By end of /start-session, the user should see:
 1. **A self-contained orientation brief** — global plan, active phase, current location, in-force lessons, promotion candidates
 2. **Recent commits for grounding**
 3. **Any warnings** about state inconsistencies
-4. **A single recommended next action**
+4. **A single recommended next action**. When its premise hasn't been opened this session (an FU body's claim about a library, a count, a cause), it says `premise unchecked` and names the check that would confirm it.
+5. **In a migrated project, the owner questions** (Stage 5.5), each answered or kept parked
 
 The user can now start work without manually reading STACK.md or recalling chat context. This command satisfies CLAUDE.md's "restate before any context switch" mandate.
 
-**Read-only:** No file writes, no commits, no state changes. Idempotent — running twice produces the same output.
+**Read-only:** No file writes, no commits, no state changes; an owner answer is applied later (Stage 5.5). Idempotent — running twice produces the same brief and asks the same questions.

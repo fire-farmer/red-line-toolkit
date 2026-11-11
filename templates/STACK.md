@@ -1,48 +1,33 @@
-# STACK.md — live state
+# STACK
 
-The single source of session state — the handoff between sessions. `/start-session` reads it to orient; `/end-session` writes the handoff back into it. Keep it current; git history is the forensic trail.
-
-> **This doc is one of a set — it points outward to two planning docs you should also keep:**
-> - **[GLOBAL-PLAN.md](GLOBAL-PLAN.md)** — the structure: the campaigns and their phases, in order. STACK's "Current location" points *into* this.
-> - **The active campaign plan** (e.g. `docs/plans/<date>-<campaign>.md`) — the detailed plan for the campaign you're in now.
+> Continuity ledger for the current campaign. Owned by Claude per [CLAUDE.md "Stack Discipline"](CLAUDE.md). `/start-session` reads it to orient; `/end-session` writes the handoff back into it. Max depth 2. Campaign FUs live here; FUs the campaign can't do live in [Standing-FUs.md](Standing-FUs.md). Closed FUs are deleted (git holds them). Format and rules: the toolkit's `reference/ledger-lifecycle.md`.
 >
-> (`CLAUDE.md` holds the always-on rules; `Standing-FUs.md` holds the cross-cutting backlog.) **If you don't have a GLOBAL-PLAN.md or a campaign plan yet, that's your cue to create them** — the session commands assume they exist.
+> Points outward to two planning docs: the global plan (`docs/plans/<date>-global-plan.md`, from `templates/GLOBAL-PLAN.md`), the campaigns in order, and the active campaign plan (`docs/plans/<date>-<campaign>.md`, from `templates/CAMPAIGN.md`).
 
-## Current location (the handoff)
-<!-- One tight paragraph: what shipped last session, what's in flight, the next move, and
-     which Campaign / Phase of GLOBAL-PLAN.md you're in. /end-session overwrites this each
-     session; /start-session reads it to orient. -->
+## Phases
 
-**Campaign / Phase:** _which campaign + phase of GLOBAL-PLAN.md this session is working in._
+One bullet per campaign, one sub-bullet per phase: `ledger.mjs audit` reads these lines to find the current campaign and stale FU homes. A closed campaign collapses to `- [x] **<Campaign>** — COMPLETE <date>`.
 
-**Prior session (YYYY-MM-DD):** _what was done, deployed, and decided._
+- [ ] **Billing** — the active campaign. Plan: docs/plans/<date>-billing.md
+  - [ ] **P1 Invoices** — ▶️ IN PROGRESS
+  - [ ] **P2 Reports** — not started
 
-**Next move:** _the single most important next action._
+## Current location
 
-## Follow-ups (phase-local)
-<!-- Small, near-term follow-ups tied to the current phase. Tag each by type so /cluster-fus
-     can batch like with like. At /end-session, every FU homed at a closing phase must
-     resolve, re-home, or promote to Standing-FUs.md — no orphans. -->
+```
+State:       <what shipped last session, what's in flight>
+Next move:   <the single most important next action>
+Pending:     <owed actions, blockers, holds — or none>
+Push state:  <N unpushed vs upstream; hold, or push-eligible>
+Pipeline:    <the pipeline and stage in flight, or none>
+```
 
-- [ ] `[type]` file:line — one-line description
-- [ ] `[perf]` src/... — example
+## Lessons
 
-## Lessons learned (in force)
-<!-- Durable lessons that should bind future sessions, kept here until they earn promotion
-     to permanent memory. /end-session audits these at every phase-close. -->
+Rules that say what to do at a decision point. Backstory and outcomes: `docs/lessons-reference.md`. Limits: the `LIMITS` line of the toolkit's `scripts/ledger.mjs report`.
 
-Each lesson is a one-line rule with an audit counter:
+## Follow-ups
 
-- `[audits survived: 0]` **State the rule in one line.** _(where it came from — phase / commit)_
+Work for the current campaign. Every FU is homed at its phase's group step for its type. Format and rules: the toolkit's `reference/ledger-lifecycle.md`.
 
-**The three-point filter — promote a lesson to permanent memory only when ALL three hold:**
-1. **`[audits survived: 3+]`** — it survived at least three phase-close audits without being dropped or superseded. Lessons start at `0`; `/end-session` increments the counter each phase-close the lesson is kept in force.
-2. **Generalizes beyond this project** — it isn't specific to one codebase.
-3. **Articulable as a one-line rule** — if you can't state it in a sentence, refine it or drop it.
-
-When a lesson passes all three, `/end-session` writes it to your **permanent memory** (a `memory/` file that auto-loads every session) and **removes it from here** — it no longer needs STACK residence. (Default threshold is 3; tighten to 5 once memory grows past ~50 files. At a campaign-close, an obviously-fundamental lesson may promote earlier.)
-
-## Decisions
-<!-- Durable choices, so they aren't re-litigated. One line each, dated. -->
-
-- YYYY-MM-DD — _decision and the one-line why._
+<!-- ledger:step-order Billing/1 docs/plans/<date>-billing.md -->

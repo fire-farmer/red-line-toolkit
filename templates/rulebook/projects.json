@@ -1,0 +1,5 @@
+{
+  "projects": [
+    { "name": "my-app", "path": "/absolute/path/to/my-app", "migrated": true, "standing": "Standing-FUs.md", "reference": "docs/lessons-reference.md", "reasonsFrom": "FU-1" }
+  ]
+}

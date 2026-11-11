@@ -1,7 +1,7 @@
 {
   "name": "red-line-toolkit",
-  "description": "The field guides from redlinedigital.dev: opinionated, battle-tested Claude Code pipelines for high-rigor refactors, module builds, page work, pre-ship audits, and session bookkeeping. Composes a lightweight anti-drift doc-method with a fleet of adversarial critics.",
-  "version": "0.1.0",
+  "description": "The field guides from redlinedigital.dev: opinionated Claude Code pipelines for high-rigor changes, module builds, page work, pre-ship audits and session bookkeeping, with decorrelated Fable reviews, decision gates that never stall a run on a programming call, and the LedgerLoop lesson and follow-up ledger.",
+  "version": "0.2.0",
   "author": {
     "name": "Scott Oliver",
     "url": "https://redlinedigital.dev"

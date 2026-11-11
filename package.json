@@ -1,0 +1,9 @@
+{
+  "name": "red-line-toolkit",
+  "private": true,
+  "type": "module",
+  "description": "The red-line-toolkit's LedgerLoop ledger checker and the tests that hold the commands to their rules. No dependencies.",
+  "scripts": {
+    "test": "node --test \"tests/*.test.mjs\""
+  }
+}
