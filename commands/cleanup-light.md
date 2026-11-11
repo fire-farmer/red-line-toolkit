@@ -1,286 +1,261 @@
 ---
-description: The standard pipeline for any change outside the project's Heavy-rigor trigger — an FU, a whole home group of FUs, or a named task, at any file count. A PLAN block with a Reuses line and a Fable plan critique for 3+ file, new-abstraction or styling work, stack skills loaded for the surfaces touched, then scope + code-reviewer critics (always) and security, simplifier, silent-failure, type-design and test-coverage critics (conditional), adjudication with security-asymmetric upgrade, verify, a Fable review on every run, and the pre-commit audit. Surfaces escalation to /change-heavy when the change meets the project's Heavy-rigor trigger.
-argument-hint: [optional <fu-id> [<fu-id> …] | <home: group, e.g. Campaign/2.3> | "<named task>" — else interactive picker]
-allowed-tools: Read, Edit, Write, Bash, Task, AskUserQuestion, Skill, SlashCommand
+description: The standard pipeline for any change outside the project's Heavy-rigor trigger — an FU, a whole group step, or a named task, at any file count. A PLAN block with a Reuses line and a Fable plan critique for 3+ file, new-abstraction or styling work, stack skills loaded for the surfaces touched, then a critic panel the diff picks, with a Fable audit beside it on every run — one prose critic for a diff of only prose and tests; otherwise scope + code-reviewer critics and security, simplifier, silent-failure, type-design and test-coverage critics on their triggers — adjudication, verify, a Fable re-audit of the fixes, the pre-commit audit, then a local commit and a report. Hands the work to /change-heavy when the change meets the project's Heavy-rigor trigger.
+argument-hint: '[optional <fu-id> [<fu-id> …] | <group step, e.g. Campaign/2.3> | "<named task>" — else the top open FU by severity]'
+allowed-tools: Read, Edit, Write, Bash, Agent, Skill
+disallowed-tools: AskUserQuestion
 ---
 
 # /cleanup-light
 
-You are running the **/cleanup-light pipeline**, the standard pipeline for every change that doesn't meet the project's Heavy-rigor trigger. Critique discipline is preserved: the same critics, an Adjudicator, a Fable review on every run and the pre-commit audit. What's lighter is the ceremony. There's no plan document, no second critique round and no subagent-per-task implementation. File count doesn't decide the pipeline; the project's CLAUDE.md Heavy-rigor trigger does.
+You are running the **/cleanup-light pipeline**, the standard pipeline for every change that doesn't meet the project's Heavy-rigor trigger. Critique discipline is preserved: the same critics, an Adjudicator, a Fable review on every run and the pre-commit audit, except in the quick lane (Stage 1), which keeps one Fable pass and the project's hook. What's lighter is the ceremony. There's no plan document, no second critique round and no subagent-per-task implementation. File count doesn't decide the pipeline; the project's CLAUDE.md Heavy-rigor trigger does.
 
-User's invocation argument (an FU, a home group, or a named task): **$ARGUMENTS**
+User's invocation argument (an FU, a group step, or a named task): **$ARGUMENTS**
 
 ---
 
 ## Stage 1 — Pick the work + load context + pre-flight gate
 
 Read `STACK.md` and locate the FOLLOW-UPS section.
+- Ledger mode: !`node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" mode 2>&1 || echo "LEDGER: unavailable"`
+
+Migrated projects (`LEDGER: migrated`): file and close FUs per `${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs, Stage 7's `/pre-commit-check --message` form included; if the mode line starts with none of `LEDGER: migrated`, `LEDGER: not migrated` or `LEDGER: not a stack project` (for example `LEDGER: unavailable` or `LEDGER ERROR`), halt and report it before touching FU rows.
 
 **Pick the work.** It's one of three input kinds:
-- **One or more FUs:** `$ARGUMENTS` names FU identifiers (an `{anchor:}` file, `FU-<n>` IDs, or legacy file:line / cluster tags). Locate each in STACK.md; if one isn't there, surface to the user and exit. Several same-type FUs are worked as one batch; Stages 1.5 and 6 run per row.
-- **A home group:** `$ARGUMENTS` names a `home:` address such as `Campaign/2.3`. Its members are every open FU homed there. Check every member against live code first and close the ones already done. Then work the remaining members as one change, fixing each class whole.
+- **One or more FUs:** `$ARGUMENTS` names FU identifiers (an `{anchor:}` file, `FU-<n>` IDs, or legacy file:line / cluster tags). Locate each in STACK.md; if one isn't there, halt and say which. Several same-type FUs are how a legacy project, whose rows share no `home:` group, works a batch; Stages 1.5 and 6 run per row.
+- **A group step:** `$ARGUMENTS` names a `home:` address such as `Campaign/2.3`. Its members are every open FU homed there. Check every member against live code first and close the ones already done (`${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs, "When a group step starts"). Then work the remaining members as one change, fixing each class whole.
 - **A named task:** `$ARGUMENTS` is a quoted description of work with no FU row, such as a campaign step or a bug the user reported. Stages 1.5 and 6 are skipped for it; there's no row to verify or close.
-- **No argument:** enumerate the open FUs with description, severity, `home:` address and anchor file (legacy rows: file:line + cluster tag). Use `AskUserQuestion`:
-  - **Question:** *"Which FU or home group to work?"*
-  - **Options:** dynamically generated from the open FUs and home groups (top 4 by severity, or alphabetical if all same severity)
+- **No argument:** work the top open FU or group step by severity (the oldest first on a tie) and name it in one line (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`).
 
 **Load context:**
 - Surface each FU's original observation (description, anchor or file:line, when flagged, why flagged), or restate the named task
 - Read the affected file(s) at the noted line(s)
 - Check git log for changes to those files since the FU was flagged — note if surrounding code has shifted
-- State the scope of the fix: the whole class the work names, not just the cited site
-- **Load the stack skills for the surfaces the work touches**, via the Skill tool, before writing the PLAN (or before Stage 2 when Stage 1.7 is skipped), so API shapes come from current guidance rather than training memory: your framework's best-practice skill for routes, pages, server code and components, your database's for SQL, migrations and access policies, your payment provider's for payments (on a Next.js + Supabase + Stripe stack: `vercel:nextjs`, `vercel:react-best-practices`, `supabase:supabase-postgres-best-practices`, `stripe:stripe-best-practices`). Load none for CSS or token-only, copy, docs or test-only work. A skill that isn't installed is skipped, not a stop. `/change-heavy` Stage 1 carries the same map; change both together.
+- State the scope of the fix: the whole class the work names, not just the cited site (R-20)
+- **A ruling that spans surfaces gets a check that enforces it:** `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § A ruling gets a check.
+- **Load the stack skills for the surfaces the work touches** (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Stack skills) before writing the PLAN, or before Stage 2 when Stage 1.7 is skipped.
 
-**Pre-flight gate (cheatsheet §5):**
-1. **Rigor check:** read the project's CLAUDE.md **Heavy rigor** trigger — its list of high-risk areas, plus a new data model or API shape. A project whose CLAUDE.md still states a file-count trigger uses that; a project whose CLAUDE.md states no trigger at all counts it as not met, but if the work touches money, auth, data or payments, ask. If the work meets the trigger, **surface to user:** *"This meets the project's Heavy-rigor trigger (<which item>). Escalate to /change-heavy, or continue here?"* File count alone never escalates.
-2. **Risk surface check:** Does this touch RLS / auth / Stripe / exports / financial calc? If yes, mark security-asymmetric upgrade as active for Stage 4 and prepare to invoke `/security-review` in Stage 3.
+**Pre-flight gate (`${CLAUDE_PLUGIN_ROOT}/reference/prompting-cheatsheet.md` § Pre-Flight Scope Check):**
+1. **Rigor check** (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The rigor trigger): test what the work alters, not where it sits. Under a criteria trigger, a label, copy, layout or styling change inside a high-risk area meets none of them and stays here; a project whose CLAUDE.md states its trigger by area or by file count is decided by that. If the work meets the trigger, hand it to `/change-heavy` without asking (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`): invoke it via the Skill tool with the work as its argument (the FU it picked, when none was named) and name the item that met the trigger.
+2. **Risk surface check:** Does this touch RLS / auth / Stripe / exports / financial calc? If yes, mark security-asymmetric upgrade as active for Stage 4. Whether Stage 3c runs is decided on the written diff (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel).
 3. **Existing-primitive check:** Note any primitive families the fix might touch — flag if creating new when reuse fits. This feeds the Stage 1.7 **Reuses** line.
 
-### Stage 1.5 — FU body verification (mandatory for an FU or home group, scope-proportionate)
+**Quick-lane check**, after the gate: when every entry condition of § The quick lane holds, take it; otherwise go on to Stage 1.5.
 
-Skipped for a named task (no FU body). FU bodies age out. Before proceeding, empirically verify **the explicit claims in each FU body**, then sweep for the same class at other sites so the fix covers it whole.
+### The quick lane
 
-- **Caller counts cited:** `grep -rn` the cited selector/identifier. Compare to FU's stated count.
-- **File paths cited:** Confirm the cited file actually contains the construct described — if the row carries an `{anchor:}`, its pattern must still match (`npm run verify:fus` checks the whole backlog).
-- **"Single-user" / "N-only" claims:** Exhaustive grep — including alternate construction patterns (template literals, `classnames()`, dynamic class composition).
-- **"May cascade" / scope-hedging framings:** Read every callsite of the **specific** selector/identifier cited — not every conceivably related file.
+A fast path inside this pipeline, not a pipeline anyone picks. Stage 1 takes it when every one of these holds:
+- the change touches at most 2 files, not counting the ledger files an FU close edits;
+- it adds no new CSS class, token or shared component, and edits no existing one that's used outside the files it touches, since that edit changes every page that uses it (a search of the project's styles and components for the name, `var(--…)` uses and template-built class families included, finds no use elsewhere). An edit to a class used only inside those files takes the lane on purpose, without Stage 1.7's plan critique;
+- it changes nothing beyond the named fix;
+- it meets nothing in the Heavy-rigor trigger (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The rigor trigger);
+- it touches no risk path (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Risk paths) and no code file that handles auth, RLS, Stripe, exports or money math, so it needs no security pass;
+- it involves no design or copy choice that's the owner's;
+- an existing test or check already covers the behaviour it changes.
 
-If any claim is wrong, output a **"Stage 1.5 audit results"** block visibly to the user with corrected facts BEFORE writing tasks. Do not silently absorb.
+The lane:
+1. For an FU, check its claim against live code first (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § FU body verification, scope-proportionate); a wrong premise closes it validated-no-action (Done, state 2).
+2. Make the edit, then run the anchor sweep (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The anchor sweep): a listed row that's already done closes, one its Closed outcome makes this run's to fix outgrows the lane, and one it leaves open stays open with its reason.
+3. Run the affected tests and seat 3h's Fable audit once over the diff, at the effort the lane states before dispatching (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort), and fix what it finds. No other critic runs and no Adjudicator.
+4. Verify as the project's CLAUDE.md requires before any commit (its pre-commit hook and its build check), plus lint on the changed files; where the project has no hook, its typecheck and full test suite before the commit.
+5. Commit by explicit pathspec, closing each FU per `${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs (its row deleted and `FU-Closed: FU-<n>` on the commit; a legacy project moves the row to its completed log).
+6. Report in one line: the fix, the tests run, Fable's verdict and effort, the anchor sweep's line (or why it didn't run, in a project that isn't migrated) and the commit hash, plus the rendered before and after for a visual change. The Done telemetry row carries `"stage":"quick"`, its Adjudicator fields at 0 and `critics` holding only `fable-decorrelation`; the fable-audit row is emitted with `plan_findings` -1 and `reaudit` `n-a`.
 
-If verification surfaces gaps so severe that the FU's premise is wrong (e.g., "single-user" turns out to be 20 callers), STOP and use `AskUserQuestion`:
-- **Question:** *"Stage 1.5 verification invalidated the FU body's framing. How to proceed?"*
-- **Options:**
-  - `Validated-no-action close` → close FU with rationale; adjacent observations pass the filing bar (CLAUDE.md "Scope discipline": a row needs **both** a named reason **and** a pass of the 2-week filter)
-  - `Escalate to /change-heavy` → only if the corrected scope meets the project's Heavy-rigor trigger
-  - `Continue with corrected scope` → proceed to Stage 1.7 with revised understanding
+If the change outgrows any condition midway (a third file, a new class, an edit to a shared one, anything beyond the named fix), the run carries on as a full `/cleanup-light` run from Stage 1.5, without stopping; one that meets the Heavy-rigor trigger goes to `/change-heavy`.
 
-Anchored in `memory/feedback_fu_body_verification.md`.
+A quick-lane fix runs in a session that's already open: in the parent session as its own lane run, or folded into a live run working that area, where it joins that run's review and commit. It never gets a session of its own, because a new session's start-up is most of a light run's message floor.
 
-### Stage 1.7 — PLAN + Fable plan critique + owner pause (when the change touches 3+ files, introduces a new abstraction, or adds or changes a CSS class, a token or a shared component)
+### Stage 1.5 — FU body verification (mandatory for an FU or group step, scope-proportionate)
 
-Skip this stage for a 1–2 file change that introduces no new abstraction and adds or changes no CSS class, token or shared component. Otherwise:
+Skipped for a named task (no FU body). Run `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § FU body verification, scope-proportionate, with its outcomes when the premise is wrong: a validated-no-action close, a hand-off to `/change-heavy`, or the corrected scope continuing into Stage 1.7.
 
-1. **Write a `PLAN` block in chat** (no plan document), in the CLAUDE.md "Default workflow" shape: Problem, Approach, Assumptions, **Reuses**, Scope, Risks, Verify. The **Reuses** line is required. It names the existing class, token or component the change reuses, or reads `New: <name> — nothing existing fits because <reason>`.
-**Claim discipline in the PLAN block.** Never write a code shape you have not opened this turn —
-paste it from the file rather than typing it from memory of a sibling. A count comes from the
-command that will verify it, not a similar grep over an adjacent set. Probe an unfamiliar seam
-rather than deriving its behaviour by reading. Any load-bearing claim you have not checked is
-marked `UNVERIFIED` in the block; the Fable plan critique treats an unmarked one as a finding. (No
-claims-ledger section here — that is `/change-heavy`'s, for plans with a document to hold it.)
+### Stage 1.7 — PLAN + Fable plan critique (when the change touches 3+ files, introduces a new abstraction, or adds or changes a CSS class, a token or a shared component)
 
-2. **Dispatch one Fable plan critique** via the Task tool on the decorrelated family (**`model: fable`**, or `model: opus` if the orchestrator is Fable). Pass the PLAN text; a fresh subagent has no other context. Prompt:
-   > *"Decorrelated critique of this change plan, before any code is written. You did not write it — audit it with fresh priors. PLAN: <paste the PLAN block>. Check: (1) missed touchpoints — search the codebase for every place the plan's change must also reach; (2) the Reuses line — search the project's stylesheets and components for an existing class, token, component or recipe that already does what the plan proposes to add, and flag any near-duplicate; (3) sequencing and hidden-coupling errors. If a defect class this plan fixes will recur and nothing checks for it, say so and recommend a check (name what it would catch). Do NOT review security and do NOT restyle. Output numbered findings — severity, evidence (path + quoted text), fix — or `CLEAN`."*
-3. **Absorb the critique into the PLAN block.** Fable finds; the orchestrator revises. A PLAN revised on this critique gets no second critique round; a split or superseded *plan document* is `/change-heavy` territory.
-4. **Owner pause.** Use `AskUserQuestion`:
-   - **Question:** *"PLAN ready (Fable: N findings absorbed<, recommends a check: …>). Proceed?"*
-   - **Options:** `Proceed` · `Proceed, and build the recommended check` (only when Fable recommended one) · `Revise the plan` · `Escalate to /change-heavy`
+Skip this stage for a 1–2 file change that introduces no new abstraction and adds or changes no CSS class, token or shared component; that run sets its dispatch efforts before its first dispatch (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort). Otherwise:
 
-   This is where a Fable-recommended check is approved or declined (CLAUDE.md checking-script rule). Any CLAUDE.md rule to pause and confirm before a multi-file change is satisfied here.
+1. **Write a `PLAN` block in chat** (no plan document), in the CLAUDE.md "Default workflow" shape: Problem, Approach, Assumptions, **Reuses**, Scope, Risks, Verify, **Effort**. The **Reuses** line is required. It names the existing class, token or component the change reuses, or reads `New: <name> — nothing existing fits because <reason>`. The **Effort** line sets the effort of every agent this run dispatches, this stage's critique included (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort).
+   The block follows `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Claim discipline; a load-bearing claim you haven't checked is marked `UNVERIFIED` in it, and the Fable plan critique treats an unmarked one as a finding.
+
+2. **Dispatch one Fable plan critique** via the Agent tool as a `fable-seat` subagent (`subagent_type: red-line-toolkit:fable-seat`) on the decorrelated family (**`model: fable`**, or `model: opus` if the orchestrator is Fable). Pass the PLAN text; a fresh subagent has no other context. Prompt:
+   > *"Decorrelated critique of this change plan, before any code is written. You did not write it — audit it with fresh priors. PLAN: <paste the PLAN block>. Check: (1) missed touchpoints — search the codebase for every place the plan's change must also reach; (2) the Reuses line — search the project's stylesheets and components for an existing class, token, component or recipe that already does what the plan proposes to add, and flag any near-duplicate; (3) sequencing and hidden-coupling errors. If a defect class this plan fixes will recur and nothing checks for it, say so and recommend a check (name what it would catch). If the plan carries out a ruling over every surface or reader, it must name a check that enforces the ruling, produces its census from the code and is built before the sweep; a plan without one is a finding. Do NOT review security and do NOT restyle. Output numbered findings — severity, evidence (path + quoted text), fix — or `CLEAN`."*
+3. **Absorb the critique into the PLAN block.** Fable finds; the orchestrator revises. A PLAN revised on this critique gets no second critique round. That's this pipeline's R-12 boundary; a split or superseded *plan document* is `/change-heavy` territory.
+4. **Owner items are parked, not asked.** A plan item that is the owner's (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` tier 3) is parked per § Parking, with the intended look (a mockup, a rendered probe or a precise description); the rest of the plan goes ahead. A fork in approach is decided, not asked (tier 1).
+
+   The PLAN, the critique's absorbed findings and any parked item go in the Stage 7 report. A check Fable recommends is filed or dropped under the filing bar, not built in this run (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` tier 1).
 
 ---
 
 ## Stage 2 — Implement
 
-Make the change against the plan (or the stated scope, when Stage 1.7 was skipped). **No silent "while I'm here" edits.** Anything you notice is a review leftover and passes the filing bar (CLAUDE.md "Scope discipline": a row needs **both** a named reason **and** a pass of the 2-week filter):
-- **The same class as this change** (the same defect or the same fix at another site): fix it in this change and say so in the REVIEW. This is the default — scope is the class, not the cited site.
-- **Otherwise:** file it only when it passes the 2-week filter and has a named reason it can't be done now (a product decision, a real risk, an abstraction decision). If not, drop it, with one line in the commit body.
+Make the change against the plan (or the stated scope, when Stage 1.7 was skipped). Anything you notice is a review leftover and passes the filing bar (`${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs — read it before filing: a row needs **both** a named reason **and** a pass of the 2-week filter), and none goes silently into the diff:
+- **The same class as this change** (the same defect or the same fix at another site): fix it in this change and say so in the report. This is the default (R-20).
+- **A real issue in the area this change works** (the same feature, flow or files; `${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs says what counts): fix it in this change, whatever its class, and list it with the minor tweaks in the report, the commit body and every Stage 3 prompt. A **minor tweak**, a few lines in a file this change already touches, is the smallest case; a larger one joins the PLAN and hands the run to `/change-heavy` when it meets the Heavy-rigor trigger. One that's genuinely the owner's call is parked instead.
+- **Otherwise:** file it only when it's in a completely separate area or the owner's call: it passes the 2-week filter and has a named reason it can't be done now (a product decision, or, outside the area, a real risk, an abstraction decision or its own run), written as the row's `why not now`. If not, drop it, with one line in the commit body. `ledger.mjs audit` stops on a row filed in the area unless its reason is `product` or it's an owner decision.
 
-**Heavy-trigger guard:** if the implementation turns out to meet the project's Heavy-rigor trigger (a risk area or a new data model / API shape the plan didn't anticipate), STOP and surface:
+**Anchor sweep.** Once the change is written, run `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The anchor sweep: close each FU it lists that qualifies, and carry the rest into the report.
 
-> *"The change now meets the Heavy-rigor trigger (<which item>). Continue here, or escalate to /change-heavy?"*
-
-User decides — do not auto-escalate. Growing file count alone is not a stop.
+**Heavy-trigger guard:** if the implementation turns out to meet the project's Heavy-rigor trigger (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The rigor trigger) in a way the plan didn't anticipate, hand the work to `/change-heavy` without asking and name the item that met it (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`). Growing file count alone is not a reason.
 
 ---
 
-## Stage 3 — Light critique (parallel)
+## Stage 3 — Light critique + the Fable audit (parallel)
 
-Run the specialist trigger snippet (under "Conditional specialists" below) first. Then dispatch every Task critic that applies in parallel — **single message, multiple tool calls** — and run the skill seat (3c) while they work. Pass `model:` matching the orchestrator's current model family on all dispatches.
+Run the trigger snippet in `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel first; its counts pick the panel. Then dispatch every subagent critic that applies, and seat 3h, in parallel — **single message, multiple tool calls** — and run the skill seat (3c) while they work. Pass `model:` matching the orchestrator's current model family, and the plan's effort, on every dispatch but 3h, which runs on the other family. Every prompt that names the work also lists the minor tweaks and in-area fixes this run made (Stage 2), or says none.
 
-**Always run:**
+**A prose diff (`code=0`)** dispatches Critic 3p in place of 3a, 3b and 3d, plus 3g when `tests` > 0, and seat 3h always. Nothing else runs at this stage.
+
+- **Critic 3p — prose critic (general-purpose):**
+  > *"Review this diff of prose (process docs, plans or other markdown) and any tests it changes. The work described: [paste the FU description(s), group step, or named task — plus the PLAN block when Stage 1.7 ran]. Minor tweaks and in-area fixes, also intended: [list, or none]. Files changed: [list from `git diff --name-only HEAD`]. Find: (1) scope — a changed line that traces to neither the work nor a listed tweak; (2) correctness — a statement that contradicts another doc in the repo, a `<file>.md § <section>` pointer or path that doesn't resolve, a copy of a rule this diff changes that still says the old thing elsewhere (search for it), a count or list the change makes wrong, a rule whose meaning shifts beyond the work, and a bug in changed test code, such as a check that can't fail; (3) redundancy — text that repeats another section or restates what the code says. Output: `file:line — severity — issue — recommendation`."*
+
+**Any other diff — always run:**
 
 - **Critic 3a — scope critic (general-purpose):**
-  > *"Review this implementation diff for scope discipline. The work described: [paste the FU description(s), home group, or named task — plus the PLAN block when Stage 1.7 ran]. Files changed: [list from `git diff --name-only HEAD`]. Question: does every changed line trace to that work? The same fix applied at another site of the same class IS in scope. Flag changes that are a different class of work, refactoring beyond the work, or new abstractions it doesn't warrant. Output: `file:line — severity — issue — recommendation`."*
+  > *"Review this implementation diff for scope discipline. The work described: [paste the FU description(s), group step, or named task — plus the PLAN block when Stage 1.7 ran]. Minor tweaks and in-area fixes, also intended: [list, or none]. Files changed: [list from `git diff --name-only HEAD`]. Question: does every changed line trace to that work? The same fix applied at another site of the same class IS in scope, and so is a listed minor tweak or fix of a real issue in the area the work is in (the same feature, flow or files), whatever its class. Flag changes in a separate area, refactoring beyond the work, or new abstractions it doesn't warrant. Output: `file:line — severity — issue — recommendation`."*
 
 - **Critic 3b — `pr-review-toolkit:code-reviewer`:**
   > *"Review this implementation for bugs, logic errors, conventions, and quality issues. Confidence-based filtering — only report high-priority issues. Files changed: [list]. Output: `file:line — severity — issue — recommendation`."*
 
-**Conditional (run only if engaged at Stage 1 pre-flight):**
+**Conditional:**
 
-- **Critic 3c — `/security-review`** (if risk surface engaged at Stage 1 *or* the Stage 2 diff touches a risk path):
-  > Stage 1 predicts the risk surface before implementation, so re-check against the actual change — `git diff --name-only HEAD` intersected with the risk paths: `src/app/api/**`, `**/auth/**`, `**/stripe/**`, `**/billing/**`, your migrations and access-policy (RLS) files, auth middleware, money-math modules, export routes, and any risk paths your CLAUDE.md names (the same list as `/change-heavy` Stage 0; change both together). If the Stage 1 flag is set OR that intersection is non-empty, invoke `/security-review` via the SlashCommand tool on the current branch's staged + unstaged changes. Capture output as Critic 3c's findings.
+- **Critic 3c — `/security-review`**, when `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel's security rule holds for the diff. Invoke it via the Skill tool on the current branch's staged + unstaged changes and capture its output as Critic 3c's findings.
 
 - **Critic 3d — simplifier critic** (only if diff > 5 lines):
   > *"Review this implementation for dead code, redundant checks, over-abstraction, defensive checks for impossible conditions, comments that restate code, orphaned imports/exports. Files changed: [list]. Output: `file:line — severity — issue — recommendation`."*
 
-**Conditional specialists (3e–3g) — three of the five lenses `/pr-review-toolkit:review-pr` fires in `/change-heavy` Stage 6 (errors, types, tests), triggered on the diff's content.** Run this from the repo root after Stage 2; a count of 0 skips that critic. Over-triggering costs one critic run; a miss ships the defect, so the matchers are deliberately loose (code files only, so prose never trips them). The `tests` matcher counts `src/lib/` as the pure-logic layer; point it at yours.
+**Conditional specialists (3e–3g)**, three of the lenses `/pr-review-toolkit:review-pr` fires in `/change-heavy` Stage 6, each on its count from the snippet; a count of 0 skips it.
 
-```bash
-P="'*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs'"
-CHANGED=$( { git diff --name-only HEAD; git ls-files --others --exclude-standard; } | sort -u)
-CODE=$( { eval git diff -U0 HEAD -- $P | grep -E '^[+-]' | grep -vE '^(\+\+\+|---) '; eval git ls-files -z --others --exclude-standard -- $P | xargs -0 cat 2>/dev/null; } )
-echo "errors=$(printf '%s\n' "$CODE" | grep -cE '\b(try|catch|finally|throw)\b|\.catch\(')"
-echo "types=$( { printf '%s\n' "$CODE" | grep -E '^[+-]?[[:space:]]*(export[[:space:]]+)?(declare[[:space:]]+)?(type|interface|enum)[[:space:]]+[A-Za-z_]'; printf '%s\n' "$CHANGED" | grep -E '(^|/)types/'; } | grep -c .)"
-echo "tests=$(printf '%s\n' "$CHANGED" | grep -cE '\.(test|spec)\.[cm]?[jt]sx?$|^src/lib/')"
-```
-
-Each specialist prompt carries the same scope line, because a specialist reading a whole file reports its pre-existing debt, and that debt would come back as filed leftovers: *"Report only defects in lines this diff adds or changes, or that this diff makes reachable. Pre-existing issues in untouched code are out of scope — omit them."*
+Each specialist prompt carries the same scope line, because a specialist reading a whole file reports its pre-existing debt as defects of this diff: *"Report only defects in lines this diff adds or changes, or that this diff makes reachable. Pre-existing issues in untouched code are out of scope — omit them."*
 
 - **Critic 3e — `pr-review-toolkit:silent-failure-hunter`** (`errors` > 0):
   > *"Review this diff's error handling for silent failures: swallowed or over-broad catches, fallbacks that hide a failure from the user or caller, errors logged but not surfaced, success reported after a failed write. The work: [work description]. Files changed: [list]. [scope line]. Output: `file:line — severity — issue — recommendation`."*
 - **Critic 3f — `pr-review-toolkit:type-design-analyzer`** (`types` > 0):
   > *"Review the types this diff adds or changes for invariant expression and encapsulation: states the type permits that the domain forbids, optional fields that are really a discriminated union, stringly-typed values that have a closed set, persisted shapes with no load-boundary check. The work: [work description]. Files changed: [list]. [scope line]. Output: `file:line — severity — issue — recommendation`."*
-- **Critic 3g — `pr-review-toolkit:pr-test-analyzer`** (`tests` > 0 — a test file changed, or the project's pure-logic layer did):
+- **Critic 3g — `pr-review-toolkit:pr-test-analyzer`** (`tests` > 0):
   > *"Review whether this diff's behavior changes are covered by tests that would fail if the behavior broke: missing cases for new branches and boundaries, tests that assert the implementation instead of the contract, expected values derived from the code under test rather than first principles. Name the behavior that would regress unnoticed for each gap. The work: [work description]. Files changed: [list]. [scope line]. Output: `file:line — severity — issue — recommendation`."*
 
   A missing test for behavior this diff changes is part of this change. When it's absorbed at Stage 4, write the test now. When it's declined, it still isn't a leftover to file: drop it with a line in the commit body.
 
-Collect all critic outputs into a structured block for the Adjudicator. Label each critic's block with its id: `scope`, `code-reviewer`, `security-review`, `simplifier`, `silent-failure-hunter`, `type-design-analyzer`, `pr-test-analyzer`. Prefix every finding line with its label, e.g. `[simplifier] src/x.ts:12 — …`, so the Adjudicator's numbered verdicts still carry their source. **Before dispatching, mark same-site duplicates.** When two critics raise the same defect at the same site, keep the first line and append `(also: <label>, …)` to it, then delete the others, so the Adjudicator judges each defect once.
+**Beside either panel, on every run with a diff:**
+
+- **Seat 3h — Fable decorrelation audit (no skip gate)**, a `fable-seat` subagent (`subagent_type: red-line-toolkit:fable-seat`, **`model: fable`**, or `model: opus` if the orchestrator is Fable; `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The Fable seats, whose model check it gets):
+  > *"Decorrelated audit of this diff (`git diff HEAD`, plus staged). The intended change is: `<one-line intended behavior delta, or 'none — this change should preserve all behavior'>`, plus these minor tweaks and in-area fixes: `<the Stage 2 list, or none>`<; the PLAN was: <paste the Stage 1.7 PLAN block, when it ran>>. You did not write this — audit with fresh priors. Find (1) any observable behavior change OTHER than that intended delta: a dropped branch, a silently altered value, a missed dynamic reference (template-built class names included), a coercion shift; and (2) duplication: for every new CSS class, custom property, color-mix recipe or inline style object in the diff, search the project's stylesheets and components for an existing equivalent and flag near-duplicates, naming the existing one. If a defect class in this diff will recur and nothing checks for it, say so and recommend a check (what it would catch) — a recommendation, not a finding. Do NOT review security (Stage 3c covers that) and do NOT restyle. Output `file:line — severity — issue — rationale`, or `CLEAN`."*
+
+Collect all critic outputs into a structured block for the Adjudicator. Label each critic's block with its id: `prose`, `scope`, `code-reviewer`, `security-review`, `simplifier`, `silent-failure-hunter`, `type-design-analyzer`, `pr-test-analyzer`, `fable-decorrelation`. Label every finding line and mark same-site duplicates before dispatching (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel, the per-critic tally), e.g. `[simplifier] src/x.ts:12 — …`, so the Adjudicator's numbered verdicts still carry their source.
 
 ---
 
 ## Stage 4 — Adjudicate
 
-Dispatch The Adjudicator (`the-adjudicator`) via Task tool. Apply security-asymmetric upgrade if risk surface engaged. Pass the structured block + the FU description as context.
+Dispatch The Adjudicator (`red-line-toolkit:the-adjudicator`) via the Agent tool. Apply security-asymmetric upgrade if risk surface engaged. Pass the structured block led by a `DELTA:` line — the work (the FU description(s), group step or named task), the intended change seat 3h was given, its minor tweaks and in-area fixes and the PLAN block when Stage 1.7 ran — so the scope rows have the declared scope and a finding that restates the fix is ditched rather than reverting it.
 
-Present verdicts verbatim. Use `AskUserQuestion`:
+**Tally per critic** from the verdicts, for the telemetry `critics` field (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel).
 
-- **Question:** *"The Adjudicator marked [N] critiques ([K] KEEP, [D] DITCH, [M] MODIFY). Which to absorb?"*
-- **Options:**
-  - `Absorb all KEEP + MODIFY` → revise the implementation
-  - `Absorb none — proceed to verify` → no revision
-  - `Let me list specific CRITIQUE_IDs` → free-text follow-up
+Absorb every KEEP and MODIFY verdict without asking (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`; a file a fix creates is marked intent-to-add, `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel) and list the verdicts in the report, ditched ones included, so the owner can pull one back. A verdict that would change what a user sees beyond the plan, or reverse a ruling the owner made, is tier 3: park that one and absorb the rest. A verdict that diagnoses the Heavy-rigor trigger hands the work to `/change-heavy`; one that finds the plan's premise off sends the run back to Stage 1.7, and a second consecutive replan halts and reports. A recommended check is filed or dropped under the filing bar, not built in this run. A KEEP that would undo the intended change or a listed minor tweak or in-area fix is ditched, with the reason in the report.
 
 ---
 
 ## Stage 5 — Revise + verify
 
 Apply selected verdicts to the implementation. Run `npm run build`:
-- If pass: continue to Stage 5.5.
-- If fail: invoke `superpowers:systematic-debugging` skill to find root cause, fix, re-verify. Loop within Stage 5 until clean.
+- If pass: continue to Stage 6.
+- If fail: invoke `superpowers:systematic-debugging` skill to find root cause, fix, re-verify. Loop within Stage 5 until clean. When three fixes have failed and the skill says to discuss with your human partner before another, halt and report it as a true blocker (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` § Halts).
 
 Verify lint count preserved or improved (per CLAUDE.md).
 
+If the diff touches `supabase/` schema or RLS, follow `${CLAUDE_PLUGIN_ROOT}/reference/supabase-local.md`: in an adopted project, apply it on the local stack and pass `npm run test:rls`; otherwise use its before-adoption path and say so in the report. `/change-heavy` Stage 1 carries the same pointer.
+
 ---
 
-## Stage 5.5 — Fable decorrelation audit (every run)
+## Stage 5.5 — Fable re-audit of the fixes (only if Stage 4 absorbed a fix other than a `[security-review]` one, or Stage 5's verify changed the diff)
 
-**Runs on every run that produced a diff — code, CSS, tokens, class renames and comments alike.** No skip gate. The orchestrator that wrote the diff never decides "this obviously changed nothing"; that's the blind spot the audit exists to catch, and CSS and token edits are where duplicated styling slips in. Only a validated-no-action or abandon close (no diff) skips it.
+A prose diff whose post-review fixes were small skips this stage (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel); count the lines your fixes changed and give the count in the report.
 
-**Audit for _unintended_ change — pass the intended behavior delta in.** Many changes are behavior-changing by design (silent-failure, security, perf, bug). A naive "zero-behavior-change" lens would flag the intended fix as a defect and — with no disposition step — get it reverted. So tell Fable what the intended change is and have it hunt for everything *else*. Dispatch a **single** scoped Fable pass over the diff via the Task tool on the decorrelated family (**`model: fable`**, or `model: opus` if the orchestrator is Fable — see the Fable-seat notes) — the decorrelated eye the orchestrator-model critics (Stage 3) structurally can't be. Prompt:
+Dispatch **one** Fable re-audit of the corrected diff as a `fable-seat` subagent (`subagent_type: red-line-toolkit:fable-seat`), on the family seat 3h ran on. **Pass the findings you fixed** so the re-audit is anchored (a fresh subagent can't confirm a fix holds without knowing the defect):
 
-> *"Decorrelated audit of this diff (`git diff HEAD`, plus staged). The intended change is: `<one-line intended behavior delta, or 'none — this change should preserve all behavior'>`<; the PLAN was: <paste the Stage 1.7 PLAN block, when it ran>>. You did not write this — audit with fresh priors. Find (1) any observable behavior change OTHER than that intended delta: a dropped branch, a silently altered value, a missed dynamic reference (template-built class names included), a coercion shift; and (2) duplication: for every new CSS class, custom property, color-mix recipe or inline style object in the diff, search the project's stylesheets and components for an existing equivalent and flag near-duplicates, naming the existing one. If a defect class in this diff will recur and nothing checks for it, say so and recommend a check (what it would catch) — a recommendation, not a finding. Do NOT review security (Stage 3c covers that) and do NOT restyle. Output `file:line — severity — issue — rationale`, or `CLEAN`."*
+> *"Re-audit this corrected diff. The findings just fixed were: `<paste the verbatim KEEP/MODIFY findings absorbed at Stage 4, less the [security-review] ones, and any Stage 5 build fix>`. Confirm each fix holds at the root and introduced no new observable change. Same lens as the audit; NOT security. Output findings or `CLEAN`."*
 
-**Disposition (findings are NOT auto-fixed):**
-- **CLEAN** → proceed to Stage 6.
-- **Finding is the intended delta** (the fix itself, done correctly) → DITCH silently; it is not a defect.
-- **Finding is an unintended change or a duplicate** → fix on the orchestrator, re-run `npm run build`, then **Stage 5.6**. **Fable finds; it never fixes.**
-- **A recommended check** → surface it to the user with `AskUserQuestion` (*"Fable recommends a check for <class>: <what it catches>. Build it?"* — `Build it` · `Decline`). A check is built only on a yes (CLAUDE.md checking-script rule).
-- **Ambiguous, or a Heavy-trigger / architectural diagnosis** → surface to the user; do NOT auto-revert and do NOT auto-escalate.
-
-Security note: for cleanups that engaged the security-asymmetric upgrade at Stage 1, the security lens stays with Stage 3c `/security-review` — Fable audits behavior/correctness only, and any security-adjacent fix stays on the orchestrator.
-
-### Stage 5.6 — Fable re-audit of the fix (only if Stage 5.5 found + fixed an unintended change)
-
-If Stage 5.5 surfaced an unintended change that the orchestrator just fixed, dispatch **one** Fable re-audit of the corrected diff via the Task tool on the decorrelated family (`model: fable`, or `model: opus` if the orchestrator is Fable). **Pass the prior findings** so the re-audit is anchored (a fresh subagent can't "confirm each fix holds" without knowing what the defects were):
-
-> *"Re-audit this corrected diff. The unintended-change and duplication findings just fixed were: `<paste the verbatim Stage 5.5 findings that were fixed>`. Confirm each fix holds at the root and introduced no new observable change. Output findings or `CLEAN`."*
-
-- **CLEAN** → proceed to Stage 6.
-- **A finding that restates the intended fix or names no defect** → dismiss it.
-- **New material finding** → surface to the user; **do NOT auto-loop.** A surviving finding means the fix is correlated/incomplete — one re-audit only.
+- **CLEAN** → proceed to Stage 6 (`reaudit_findings` 0).
+- **A finding that restates the intended fix or names no defect** → dismiss it. It counts in `reaudit_findings`, not `reaudit_kept`; a finding that is fixed or sends the run back to its plan counts in both.
+- **New material finding** → fix it at the root on the orchestrator and list it in the report as fixed after the one re-audit. When it shows the premise or plan is wrong, go back to Stage 1.7 instead; a second consecutive replan halts and reports. One re-audit only — never loop.
 
 ---
 
 ## Stage 6 — Mark FU(s) complete in STACK.md
 
-**Named task:** skip the row edit (there's no FU). Still record any leftover filed under the filing bar, then go to Stage 7. **Home group:** close each member FU this run finished; a member left open needs its named reason (the filing bar's successor rule).
+**Named task:** skip the row edit (there's no FU). Still record any leftover filed under the filing bar, then go to Stage 7. **Group step:** close each member FU this run finished; a member left open needs its named reason (the filing bar's successor rule).
 
-Use `AskUserQuestion`:
-
-- **Question:** *"FU cleared and verified. Mark complete in STACK.md?"*
-- **Options:**
-  - `Mark complete — move to completed log` → edit STACK.md to move the FU from open to completed section with date + brief commit-ready note
-  - `Leave open — don't update STACK.md yet` → exit without modifying STACK.md
-  - `Revise the FU entry instead` → take user direction (e.g., split the FU into smaller items, update description)
-
-If marking complete, edit STACK.md to:
-- Remove the FU from the open FOLLOW-UPS section
-- Add an entry to the completed log (or wherever your convention places cleared FUs) with: date, the FU's `home`/anchor (legacy: file:line), brief one-line resolution note
+Close each finished FU without asking (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`): delete its row per `${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs (a legacy project moves it to its completed log with the date, its `home`/anchor and a one-line resolution note). An FU left open needs its named reason. All of it goes in the report.
 
 ---
 
-## Stage 7 — Pre-commit audit
+## Stage 7 — Pre-commit audit + commit
 
 **Skip** if termination state is "Validated-no-action close" (no code changes to audit; Stage 1.5 already closed the FU without a diff).
 
-Otherwise, audit the staged diff before handing back to the user:
+Otherwise, audit the staged diff, then commit:
 
 1. **Stage the scoped files explicitly.** Run `git diff --name-only HEAD` to enumerate touched files (should be the files the PLAN or stated scope named, plus STACK.md). Stage with `git add <file> [<file>...]` — **do NOT use `git add -A`** (CLAUDE.md staging rule: avoid accidentally including `.env`, credentials, large binaries).
-2. **Invoke `/pre-commit-check`** via the SlashCommand tool with no arguments. Staged mode auto-infers the task from this conversation + STACK.md context.
-3. **Present its output verbatim.** `/pre-commit-check` runs three checks (commit-body truth, scope discipline, follow-up discipline) and has its own `AskUserQuestion` pause when findings are detected — let it run; do not re-render or summarize.
-
-User commits (or revises) based on `/pre-commit-check`'s verdict. The pipeline does NOT commit on the user's behalf — final commit authority stays with the user per CLAUDE.md *"Only create commits when requested."*
+2. **Run `/pre-commit-check` in a subagent** (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The pre-commit audit), with the task line and drafted message the subagent can't infer.
+3. **Fix what it finds.** It runs three checks (commit-body truth, scope discipline, follow-up discipline) and only reports. Fix each WARN or FAIL and run it again (tier 1); a finding that is the owner's call (tier 3) is parked.
+4. **Commit** what's staged, locally and never pushed; an in-area fix of another kind than the work (a refactor beside a feature, a copy change) goes in a commit of its own. The Done summary is the report (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` § The report).
 
 ---
 
-## Done — three valid termination states
+## Done — four valid termination states
 
-1. **Standard close** — code changes ship, FU(s) marked RESOLVED (none for a named task).
-2. **Validated-no-action close** — Stage 1.5 verification invalidated the FU body's framing; close with rationale; adjacent observations pass the filing bar (a row needs **both** a named reason **and** a pass of the 2-week filter).
-3. **Abandon-and-replan** — Stage 3/5 surfaces gaps too severe to absorb in revision; surface to user for re-scoping.
+1. **Standard close** — code changes ship, FU(s) marked RESOLVED (for a named task, only those the anchor sweep closed).
+2. **Validated-no-action close** — Stage 1.5 verification invalidated the FU body's framing; close with rationale; adjacent observations pass the filing bar (`${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs — read it before filing: a row needs **both** a named reason **and** a pass of the 2-week filter).
+3. **Abandon-and-replan** — Stage 3/5 surfaces gaps too severe to absorb in revision; re-scope and return to Stage 1.7 for a new PLAN. A second consecutive replan halts and reports.
+4. **Quick-lane close** — the lane's one-line report (Stage 1, § The quick lane) replaces the summary below.
 
 Summarize which state applies, plus:
-- Work cleared (FU home/anchor + description, home-group members closed, or the named task) — or rationale for non-action close
-- Stage 1.7: PLAN + Fable plan critique **ran (N findings absorbed) / skipped** (1–2 files, no new abstraction, no class/token/component change), and any recommended check with the owner's answer
-- Leftovers under the filing bar: **fixed now N / filed N (each with its named reason and why it passes the 2-week filter) / dropped N (named in the commit body)**
+- Work cleared (FU home/anchor + description, group step members closed, or the named task) — or rationale for non-action close
+- Stage 1.7: PLAN + Fable plan critique **ran (N findings absorbed) / skipped** (1–2 files, no new abstraction, no class/token/component change), and any recommended check with its filing-bar outcome
+- Anchor sweep: its line from `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The anchor sweep, or why it didn't run (a project that isn't migrated)
+- Leftovers under the filing bar: **fixed now N (each minor tweak and in-area fix named) / filed N (each with its named reason and why it passes the 2-week filter) / dropped N (named in the commit body)**
 - Files changed (count + list) — zero if validated-no-action
 - Stage 4 Adjudicator verdict counts: **KEEP: N / DITCH: N / MODIFY: N** with disposition (absorbed into revision / dismissed) and any MISSED items the Adjudicator flagged
-- Critics that ran: the always-on pair, plus which conditional critics fired (security, simplifier, and the specialists 3e–3g)
+- Critic yield: **raised / kept / unique** per critic that ran, the panel (prose or full), the specialists (3e–3g) that fired, and the file that engaged 3c when no risk path did
 - Stack skills loaded at Stage 1 (or none)
+- Effort per dispatch, next to its model (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort)
 - Build / lint status (npm run build pass/fail; lint count delta vs baseline)
-- Stage 5.5 Fable audit: **N findings (M duplication)**, any recommended check with the owner's answer — and re-audit: **clean / N new findings / n-a**
-- STACK.md update status (FU(s) moved to completed log / left open with a named reason / revised — and any FU filed under the filing bar)
+- Seat 3h Fable audit: **N findings (M duplication)**, any recommended check with its filing-bar outcome — and the Stage 5.5 re-audit: **clean / N new findings (K kept) / n-a / prose-skip (a prose diff, N lines fixed)**
+- STACK.md update status (FU(s) closed / left open with a named reason / revised — and any FU filed under the filing bar)
 - Stage 7 pre-commit audit verdict per check: **Truth: ✅/⚠️/❌ / Scope: ✅/⚠️/❌ / Follow-ups: ✅/⚠️/❌** — or "skipped — validated-no-action"
-- Next step: user runs `git commit` (or revises per `/pre-commit-check` findings)
+- Owner items parked: each row ID with its question, or none
+- Commit: the Stage 7 hash
 
-**Effectiveness telemetry — append on every completed run.** Via Bash, append one JSON line to `~/.claude/metrics.jsonl` (append-only; create if absent) so heavy-vs-light effectiveness becomes measurable over time. Skip only on validated-no-action / abandon closes.
-
-```bash
-echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"cleanup-light\",\"outcome\":\"completed\",\"rigor\":\"light\",\"stage\":\"4\",\"files_changed\":<n>,\"keep\":<k>,\"ditch\":<d>,\"modify\":<m>,\"net_actionable\":<adjudicator Net-actionable count>,\"missed\":<adjudicator MISSED count, 0-3>,\"security_engaged\":<true|false>}" >> ~/.claude/metrics.jsonl
-```
-
-`keep/ditch/modify/net_actionable` come straight from the Stage 4 Adjudicator verdict block; `security_engaged` from the Stage 1 risk-surface flag.
-
-**Adjudicator telemetry — append the same run** (only when Stage 4 actually adjudicated). A second line tags the adjudication itself so verdict effectiveness aggregates across every pipeline that calls The Adjudicator. `caller` identifies the invoking pipeline.
+**Effectiveness telemetry — append on every completed run.** Via Bash, append one JSON line to `~/.claude/metrics.jsonl` (append-only; create if absent). Skip on validated-no-action / abandon closes (nothing shipped).
 
 ```bash
-echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"adjudicator\",\"outcome\":\"completed\",\"caller\":\"cleanup-light\",\"keep\":<k>,\"ditch\":<d>,\"modify\":<m>}" >> ~/.claude/metrics.jsonl
+echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"cleanup-light\",\"outcome\":\"completed\",\"rigor\":\"light\",\"stage\":\"4\",\"files_changed\":<n>,\"keep\":<k>,\"ditch\":<d>,\"modify\":<m>,\"net_actionable\":<adjudicator Net-actionable count>,\"missed\":<adjudicator MISSED count, 0-3>,\"security_engaged\":<true|false>,\"input\":\"<fu|group|task>\",\"fus_closed\":<n>,\"leftovers\":{\"fixed\":<n>,\"filed\":<n>,\"dropped\":<n>,\"tweaks\":<n>},\"owner_parked\":<n>,\"swept\":{\"listed\":<n>,\"closed\":<n>},\"critics\":{\"<critic-id>\":{\"raised\":<n>,\"kept\":<n>,\"unique\":<n>}}}" >> ~/.claude/metrics.jsonl
 ```
 
-`keep/ditch/modify` are the same Stage 4 Adjudicator verdict counts. Skip both lines on validated-no-action / abandon closes (no adjudication happened).
+`keep/ditch/modify/net_actionable/missed` come from the Stage 4 verdict block; `security_engaged` is whether Stage 3c ran; `input` is the Stage 1 input kind; `fus_closed` counts the FU rows this run closed (for a named task, only the anchor sweep's); `leftovers` counts the filing-bar outcomes as the Done summary lists them, minor tweaks and in-area fixes under `fixed` and again in `tweaks`; `owner_parked` counts the `owner decision` rows parked (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` § Parking); `swept` counts the FUs the anchor sweep listed and closed (also in `fus_closed`, never in `leftovers`); `critics` holds one entry per Stage 3 block that ran, `fable-decorrelation` included, with the per-critic tally (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel). A `pipeline:"process-change"` row in the metrics file marks where a field begins or changes meaning.
+
+**Adjudicator telemetry — append the same run** (only when Stage 4 adjudicated), with the field set `/change-heavy` and `/page-implement` use, which the cross-caller readout aggregates:
+
+```bash
+echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"adjudicator\",\"outcome\":\"<completed|abandoned>\",\"caller\":\"cleanup-light\",\"stage\":\"4\",\"keep\":<k>,\"ditch\":<d>,\"modify\":<m>,\"net_actionable\":<adjudicator Net-actionable count>,\"missed\":<adjudicator MISSED count, 0-3>}" >> ~/.claude/metrics.jsonl
+```
+
+`stage` is always `4`. An abandon close after Stage 4 still emits it, with `outcome:"abandoned"`.
+
+**Fable-decorrelation telemetry — emit whenever seat 3h ran,** except on a validated-no-action or abandon close. `plan_findings` counts the Stage 1.7 critique's findings, `-1` when it was skipped; `audit_findings` counts seat 3h's raw findings, ditched intended-delta ones included; `reaudit` is `clean` or `findings` when Stage 5.5 ran, `n-a` when it didn't run, and `prose-skip` when a prose diff's small fixes skipped it; `reaudit_findings` and `reaudit_kept` count the re-audit's findings and those fixed or sending the run back to its plan, both `-1` when it didn't run; `check_recommended` is whether a seat recommended a check and `check_built` whether this run built one (only a run that picks up a filed check does).
+
+```bash
+echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"fable-audit\",\"outcome\":\"completed\",\"caller\":\"cleanup-light\",\"plan_findings\":<n|-1>,\"audit_findings\":<n>,\"reaudit\":\"<clean|findings|n-a|prose-skip>\",\"reaudit_findings\":<n|-1>,\"reaudit_kept\":<n|-1>,\"check_recommended\":<true|false>,\"check_built\":<true|false>,\"security_engaged\":<true|false>}" >> ~/.claude/metrics.jsonl
+```
 
 ---
 
 ## Notes for Claude executing this command
 
-- **Scope is the class, not the cited site.** Fixing the same defect at every site is in scope; a different class of work is not. The scope critic at Stage 3 polices the second, and the filing bar keeps leftovers from becoming successor FUs by default.
-- **Mandatory pauses** at Stage 1.7 (plan approval, when it runs), Stage 4 (verdict acceptance) and Stage 6 (mark-complete confirmation), plus Stage 5.5's check question when Fable recommends one.
-- **No auto-escalation.** If the change meets the project's Heavy-rigor trigger, surface and let the user decide whether to continue or kick to `/change-heavy`. File count is never the trigger.
-- **Conditional critics save tokens.** Security, simplifier and the three specialists (silent-failure, type-design, test-coverage) run only when their lens applies. The specialists fire on the Stage 3 trigger counts, not on judgment.
-- **Pass `model:` on all critic dispatches** so they run at orchestrator level.
+- **Scope is the class, not the cited site.** Fixing the same defect at every site is in scope (R-20), and so is a listed fix of a real issue in the area the change works, a minor tweak included; work in a separate area is not. The scope critic at Stage 3 polices the rest, and the filing bar keeps leftovers from becoming successor FUs by default.
+- **Gates follow `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`.** The run never stops for a programming call: it decides, commits and reports. A design, copy, UX or product item is parked while the rest commits; broken tools, true blockers and the loop guards halt and report. When acting without asking, take the thorough option — the owner's default is low tech debt.
+- **Escalation is automatic.** A change that meets the project's Heavy-rigor trigger goes to `/change-heavy` without asking. File count is never the trigger.
+- **The diff picks the panel** (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel), on the snippet's counts and the diff's paths, not on judgment.
+- **Pass `model:` and the plan's effort on every critic dispatch** so it runs at orchestrator level; the Fable seats run on the other family (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The Fable seats).
 - **The Adjudicator is `Read, Grep` only.** Don't pass it write tools.
 - **STACK.md edits are surgical.** Use Edit tool to move the FU entry, not Write (don't rewrite the whole file).
-- **Stage 7 is not optional except for validated-no-action close.** The pre-commit audit is the pipeline's truth-and-scope gate. Skipping it (e.g., "the diff looks fine, I'll let the user commit") regresses the pipeline to the pre-v2 manual-handoff state.
-- **Stage 7 never auto-commits.** Final commit authority stays with the user per CLAUDE.md *"Only create commits when requested."* The audit just stages + reports; the user runs `git commit`.
-
-### Fable seats (Stage 1.7 plan critique / 5.5 / 5.6)
-
-- **No skip gate.** Stage 5.5 runs on every diff, CSS and token edits included; Stage 1.7's critique runs whenever that stage does. The orchestrator that wrote the diff never gets to decide "this obviously changed nothing" — that's the blind spot the audit exists to catch.
-- **Duplication is a codebase property, so the seat must search.** A reviewer reading only the diff can't see the existing class it duplicates; both prompts tell Fable to search the project's stylesheets and components.
-- **Audit for _unintended_ change.** Behavior-changing FUs (silent-failure, security, perf, bug) are the common case — pass the intended delta in and have Fable flag everything else. Findings get a disposition (intended → DITCH, unintended → fix), never a blind auto-fix, or the intended fix gets reverted.
-- **Decorrelation is by family, not by name + audit-only.** The seats read `model: fable` because the orchestrator is normally Opus/Sonnet/Haiku; the invariant is auditor family ≠ author family. **If run on a Fable orchestrator, the seats dispatch `model: opus` instead** (else it's Fable-auditing-Fable, zero decorrelation). **Fable finds; the orchestrator fixes.** Never pass a Fable seat write tools.
-- **Verify the seat's model on first dispatch.** `fable` is a valid Task `model` value, but confirm the Stage 5.5 seat actually ran on the intended (non-orchestrator) family before trusting it — a silent downgrade would launder correlated review as decorrelated evidence.
-- **Security lens stays with `/security-review`.** Fable's cyber classifier can refuse on RLS/auth/payments — the security pass is Stage 3c `/security-review`; Fable audits behavior/correctness only.
-- **Re-audit is bounded — one pass.** Stage 5.6 runs at most once; a surviving finding is a surface-to-user signal, not a loop.
-- **Doubles as an escalation sensor.** If Stage 5.5 surfaces a Heavy-trigger / architectural finding, surface it — the user decides on `/change-heavy`; don't absorb it here.
+- **Stage 7 is not optional except for validated-no-action close and the quick lane, whose verify and commit steps replace it.** The pre-commit audit is the pipeline's truth-and-scope gate. Skipping it (e.g., "the diff looks fine, I'll let the user commit") regresses the pipeline to the pre-v2 manual-handoff state.
+- **Stage 7 commits on its own, locally, and never pushes.** Stage by explicit path, never `git add -A`.

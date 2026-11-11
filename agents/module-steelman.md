@@ -1,14 +1,7 @@
 ---
 name: module-steelman
 description: |
-  Adversarial steelman agent for /module-audit Stage 1.5. For each Stage 1A+1B finding, writes the strongest one-sentence DEFENSE of the criticized decision. Helps the downstream Adjudicator weigh whether to KEEP or DITCH findings.
-
-  <example>
-  Context: /module-audit Stage 1.5 dispatching steelman after Stage 1A+1B findings collected.
-  user: "Here are all Stage 1A+1B findings for the Billing module. For each, write the strongest defense of the criticized code."
-  assistant: "I'll dispatch module-steelman to produce a STEELMAN line per finding — the strongest argument the original code's author would make."
-  <commentary>Canonical Stage 1.5 usage. Output feeds Adjudicator's per-finding judgment.</commentary>
-  </example>
+  Adversarial steelman agent for /module-audit Stage 1.5. For each Stage 1A+1B finding, writes the strongest one-sentence DEFENSE of the criticized decision.
 model: inherit
 color: yellow
 tools: ["Read", "Grep"]
@@ -55,3 +48,12 @@ Where `FINDING_ID` matches the order the orchestrator passed findings in (1-inde
 - Do not add new findings.
 - Do not rewrite the critiques.
 - Do not produce multi-sentence steelmen — one sentence enforces discipline.
+
+## Examples
+
+<example>
+Context: /module-audit Stage 1.5 dispatching steelman after Stage 1A+1B findings collected.
+user: "Here are all Stage 1A+1B findings for the Billing module. For each, write the strongest defense of the criticized code."
+assistant: "I'll dispatch module-steelman to produce a STEELMAN line per finding — the strongest argument the original code's author would make."
+<commentary>Canonical Stage 1.5 usage. Output feeds Adjudicator's per-finding judgment.</commentary>
+</example>

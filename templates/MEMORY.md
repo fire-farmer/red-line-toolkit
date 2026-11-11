@@ -1,20 +1,16 @@
-# MEMORY.md — the index of what's been learned
+# MEMORY.md — the index of what the owner has told Claude
 
-Permanent memory. The **index** below loads every session; each lesson's **body** (a `memory/<slug>.md` file) loads only when the work matches it — so the always-on prompt stays small while everything learned stays reachable.
+Claude Code's auto-memory. The **index** below loads every session; each body (a `memory/<slug>.md` file) loads when the work matches it, so the always-on prompt stays small.
 
-Lessons arrive here exactly one way: they pass the **three-point filter** in `STACK.md` — survived **3+ phase-audits**, generalizes beyond this project, states in **one line** — and `/end-session` promotes them, moving each out of `STACK.md` and into a `memory/` file. This is graduated knowledge, not a scratchpad; nothing lands here that hasn't earned it.
+**What lives here:** the owner's preferences and feedback about how to work (a `memory/feedback_*.md` file), and facts about the project and its people that the repo can't record. Writing one is a tier-3 decision: it loads into every session, so it waits for the owner's approval (the toolkit's `reference/decision-gates.md` § Tier 3).
+
+**What never lives here: lessons.** A lesson is a project rule in STACK `## Lessons`, scored by the ledger. One that keeps catching defects across phases and applies to any project is promoted to the **rulebook** (`~/.claude/CLAUDE.md`, as `R-<n>`), with the owner's approval — never to a memory file (the toolkit's `reference/ledger-lifecycle.md` § Lessons).
 
 ## Index
 <!-- One line per memory: a link to the body, and a hook so a future session knows when it's
      relevant. Keep it to a line; the body holds the detail. -->
 
-- [&lt;slug&gt;](memory/&lt;slug&gt;.md) — _the one-line rule · when it applies._
+- [&lt;slug&gt;](memory/&lt;slug&gt;.md) — _the one-line preference or fact · when it applies._
 
-<!-- Example:
-- [route-models-by-judgment](memory/route-models-by-judgment.md) — cheap models type, expensive
-  models judge; set model + effort explicitly per task, never inherit by default.
--->
-
-<!-- Body file format (memory/<slug>.md): the one-line rule up top, then the why, the how-to-apply,
-     and a pointer to the phase/commit it graduated from. Tighten the promotion threshold from 3 to
-     5 audits once this index passes ~50 entries. -->
+<!-- Body file format (memory/<slug>.md): the one-line preference or fact up top, then the why and how
+     to apply it. -->

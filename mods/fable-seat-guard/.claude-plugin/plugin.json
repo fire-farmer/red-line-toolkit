@@ -1,0 +1,10 @@
+{
+  "name": "fable-seat-guard",
+  "version": "0.1.0",
+  "description": "Puts every fable-seat subagent on a model family other than the orchestrator's, checks the model that actually started, and holds the seat to read-only tools.",
+  "author": {
+    "name": "Scott Oliver",
+    "url": "https://redlinedigital.dev"
+  },
+  "license": "MIT"
+}

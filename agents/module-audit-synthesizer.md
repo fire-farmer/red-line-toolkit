@@ -1,14 +1,7 @@
 ---
 name: module-audit-synthesizer
 description: |
-  Synthesis agent for /module-audit Stage 2. Reads ALL findings from Stage 1A (lens critics), Stage 1B (cross-cut critics), and Stage 1.5 (red-team + steelman + repro-sketcher), then dedupes, tags, and EMITS IN THE-ADJUDICATOR'S CANONICAL CRITICS INPUT SHAPE. This is the critical contract fix.
-
-  <example>
-  Context: /module-audit Stage 2 invoked after all Stage 1 findings collected.
-  user: "Synthesize all Stage 1 findings into the-adjudicator's expected input format. Findings paths: [list]"
-  assistant: "I'll dispatch module-audit-synthesizer to dedupe, tag, and emit a CRITICS-shape markdown block ready for the Adjudicator."
-  <commentary>Canonical Stage 2 usage. Output MUST match the-adjudicator.md's documented input shape exactly.</commentary>
-  </example>
+  Synthesis agent for /module-audit Stage 2. Reads ALL findings from Stage 1A (lens critics), Stage 1B (cross-cut critics), and Stage 1.5 (red-team + steelman + repro-sketcher), then dedupes, tags, and EMITS IN THE-ADJUDICATOR'S CANONICAL CRITICS INPUT SHAPE.
 model: inherit
 color: blue
 tools: ["Read", "Grep", "Write"]
@@ -76,3 +69,12 @@ The orchestrator passes this output file's contents directly to the-adjudicator 
 - Do not drop findings (only deduplicate; preserve all unique observations).
 - Do not change severity (only preserve the strictest when deduping duplicates).
 - Do not run any other tool (no Bash, no Glob).
+
+## Examples
+
+<example>
+Context: /module-audit Stage 2 invoked after all Stage 1 findings collected.
+user: "Synthesize all Stage 1 findings into the-adjudicator's expected input format. Findings paths: [list]"
+assistant: "I'll dispatch module-audit-synthesizer to dedupe, tag, and emit a CRITICS-shape markdown block ready for the Adjudicator."
+<commentary>Canonical Stage 2 usage. Output MUST match the-adjudicator.md's documented input shape exactly.</commentary>
+</example>

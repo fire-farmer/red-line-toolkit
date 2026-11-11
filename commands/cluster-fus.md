@@ -1,7 +1,8 @@
 ---
 description: Re-buckets the whole FU backlog (STACK.md phase-local + Standing-FUs.md) by type, surfaces batch-ready clusters with a suggested pipeline, and flags untagged/orphaned rows. Read-only — suggests batches, does not execute them. The "cluster like-type FUs" engine.
-argument-hint: [optional --type <name> to focus one type | --phase <n> to scope]
+argument-hint: "[optional --type <name> to focus one type | --phase <n> to scope]"
 allowed-tools: Read, Bash
+disallowed-tools: AskUserQuestion
 ---
 
 # /cluster-fus
@@ -19,6 +20,9 @@ User's invocation argument: **$ARGUMENTS**
 - Read `STACK.md` (phase-local FUs, under "Open follow-ups")
 - Read `Standing-FUs.md` (cross-cutting FUs)
 - !`ls -la STACK.md Standing-FUs.md 2>/dev/null || true`
+- !`node "${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs" mode 2>&1 || echo "LEDGER: unavailable"`
+
+Migrated projects (`LEDGER: migrated`): cluster FUs per `${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § Cluster; if the mode line starts with none of `LEDGER: migrated`, `LEDGER: not migrated` or `LEDGER: not a stack project` (for example `LEDGER: unavailable` or `LEDGER ERROR`), say so and stop before Stage 2 — don't cluster a ledger that may be migrated.
 
 If `--type <name>`: focus only that type. If `--phase <n>`: scope to that Phase's phase-local FUs.
 
@@ -32,7 +36,7 @@ Group by `type`. For each type-cluster, count members:
 - **2 or more same-type FUs** → a batch candidate
 - **1** → not yet a batch; leave it
 
-**The batch's pipeline is the project's CLAUDE.md Heavy-rigor trigger, not its size.** A batch that reaches a listed high-risk area or a new data model / API shape → `/change-heavy`; any other batch → `/cleanup-light`, which takes a whole `home:` group at any file count. A project whose CLAUDE.md still states a file-count trigger applies that; one that states no trigger suggests `/cleanup-light` and flags any batch touching money, auth, data or payments. A member tag written under the old file-count rule is advisory — re-decide against the trigger. Note any cluster spanning both STACK (phase-local) and Standing-FUs — that's a signal the work crosses the phase boundary.
+**The batch's pipeline is the project's CLAUDE.md Heavy-rigor trigger, not its size.** A batch whose changes meet it (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The rigor trigger) → `/change-heavy`; any other batch → `/cleanup-light`, which takes a whole group step at any file count. A project whose CLAUDE.md still states a file-count trigger, or none, applies `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The rigor trigger. A member tag written under the old file-count rule is advisory — re-decide against the trigger. Note any cluster spanning both STACK (phase-local) and Standing-FUs — that's a signal the work crosses the phase boundary.
 
 ## Stage 4 — Report
 
@@ -41,7 +45,7 @@ Output a scannable table, ordered by batch-readiness (most-ready first):
 ```
 BATCH-READY:
   type-design        ×9   → /cleanup-light   [STACK: 7 (home: Sweep/2.3) + Standing: 2]
-  silent-failure     ×4   → /change-heavy (2 touch auth)   [STACK: 4 (Sweep/1.4)]
+  silent-failure     ×4   → /change-heavy (2 alter an auth path)   [STACK: 4 (Sweep/1.4)]
   test-coverage      ×6   → /cleanup-light   [STACK: 5 + Standing: 1]
 
 NOT YET BATCHABLE (1 each): observability, perf
@@ -56,7 +60,7 @@ For each batch-ready cluster, list its member FUs (one line each: `what — home
 
 Recommend the single highest-leverage batch (largest cohesive cluster targeting open work) and name the exact pipeline + the FUs it would absorb. Example: *"Highest leverage: the 9 type-design FUs → one `/cleanup-light` run on the branded-type cleanup (Percentage + NumericString + union-lifts — types, not a new data model or API shape), absorbing 7 Sweep/2.3 + 2 Standing rows."*
 
-Do NOT start the pipeline — the user decides.
+Do NOT start the pipeline: this command only suggests.
 
 ## Done — emit telemetry
 

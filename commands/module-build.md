@@ -1,8 +1,10 @@
 ---
 description: Apex orchestration pipeline for new modules. Drafts module concept, architecture sketch, and phased page breakdown, then locks the output as a Module Spec doc. Use when starting a new module (e.g., Reports, Settings, Team, Billing).
-argument-hint: [module name + brief purpose]
-allowed-tools: Read, Write, Task, AskUserQuestion, Skill
+argument-hint: "[module name + brief purpose]"
+allowed-tools: Read, Write, Agent, AskUserQuestion, Skill
 ---
+
+> **Gates follow `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`.** A programming call is decided and listed in the run's report; only that doc's tier-3 items are the owner's.
 
 # /module-build
 
@@ -22,11 +24,13 @@ Verify this is genuinely a new module (not a sub-feature of an existing one). If
 
 ## Stage 1 — Concept
 
-Invoke the `superpowers:brainstorming` skill to draft a Module Concept covering:
+Invoke the `superpowers:brainstorming` skill for its questions to draft a Module Concept covering:
 - **Goal:** what this module exists to do for the user
 - **Scope (in / out):** what's included; what's explicitly deferred
 - **Success criteria:** how we'll know it works (metrics, user behaviors)
 - **User value:** the specific competitive gap or pain it addresses
+
+Use the skill in conversation only: it writes no design doc and commits nothing, and its visual companion (a browser tab and a local server), its spikes, its builder check and its hand-off to `superpowers:writing-plans` are skipped, since the Stage 4 Module Spec is this run's one artifact and the path `/module-sprint` waits on. Tech choices (platform, libraries, data layer) are Claude's, so the questions leave them out.
 
 Surface the draft. Then use `AskUserQuestion` to compel a structural pause:
 

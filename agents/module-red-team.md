@@ -1,14 +1,7 @@
 ---
 name: module-red-team
 description: |
-  Adversarial agent for /module-audit Stage 1.5. Reads all Stage 1A + 1B findings and identifies up to 5 issues that lens and cross-cut critics missed. Runs sequentially after Stage 1A+1B complete.
-
-  <example>
-  Context: /module-audit Stage 1.5 dispatching red-team after Stage 1A+1B return findings.
-  user: "Here are all Stage 1A and 1B findings for the Billing module. Identify up to 5 issues these critics missed."
-  assistant: "I'll dispatch module-red-team to look for blind spots — interactions between findings, missed lenses, scope creep risks."
-  <commentary>Canonical Stage 1.5 usage. Red-team must read findings from BOTH 1A and 1B to find cross-cutting gaps.</commentary>
-  </example>
+  Adversarial agent for /module-audit Stage 1.5. Reads all Stage 1A + 1B findings and identifies up to 5 issues that lens and cross-cut critics missed.
 model: inherit
 color: red
 tools: ["Read", "Grep", "Glob"]
@@ -59,3 +52,12 @@ Do not duplicate Stage 1A/1B findings — your job is what's MISSING, not louder
 - Do not generate findings without concrete evidence.
 - Do not rewrite or suggest implementations.
 - Do not pad with low-signal observations.
+
+## Examples
+
+<example>
+Context: /module-audit Stage 1.5 dispatching red-team after Stage 1A+1B return findings.
+user: "Here are all Stage 1A and 1B findings for the Billing module. Identify up to 5 issues these critics missed."
+assistant: "I'll dispatch module-red-team to look for blind spots — interactions between findings, missed lenses, scope creep risks."
+<commentary>Canonical Stage 1.5 usage. Red-team must read findings from BOTH 1A and 1B to find cross-cutting gaps.</commentary>
+</example>
