@@ -71,7 +71,7 @@ The pipelines compose other tools. Without them, the stages that call them will 
 - `CAMPAIGN.md` — one campaign's plan (Phases → Steps), with the table where group steps get scheduled
 - `VISION.md` — the destination and the identity constraints (the yardstick)
 - `MEMORY.md` — the owner's preferences and feedback; lessons never go here
-- `rulebook/` — the starter rulebook (`R-1`…`R-26`), its backstories and a `projects.json`, for `~/.claude`
+- `rulebook/` — the starter rulebook (22 rules, `R-1`…`R-27`), its backstories and a `projects.json`, for `~/.claude`
 
 See [`THE-SYSTEM.md`](THE-SYSTEM.md) for how they fit, or [`QUICKSTART.md`](QUICKSTART.md) to stand them up.
 
