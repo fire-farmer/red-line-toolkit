@@ -37,7 +37,7 @@ The BIMForum LOD Specification (2025 edition, updated yearly) defines how much a
 |---|---|---|---|
 | Programming | 100 | Room list, areas, adjacency; massing blocks | `PROGRAM.md`, bubble diagram |
 | Schematic design (SD) | 100–200 | Net room rectangles, nominal walls, windows by wall, stair boxes, roof form | `design.yaml` → `check_design.py`, `render_plan.py`, `spec_to_ifc.py` |
-| Design development (DD) | 200–300 | Real wall types and thicknesses, door and window sizes from schedules, stair geometry, structure grid, MEP spaces, sections | IfcOpenShell/Bonsai, build123d components, sections and elevations |
+| Design development (DD) | 200–300 | Real wall types and thicknesses, door and window sizes from schedules, stair geometry, structure grid, MEP spaces, sections | FreeCAD BIM (NativeIFC) through freecad-mcp; IfcOpenShell scripts; build123d components |
 | Construction documents (CD) | 300 (+350 where coordinating) | Exact sizes, locations, interfaces with structure and MEP, details, schedules | Licensed professional's BIM/CAD, with Claude assisting (W-PRO-1) |
 | As-built | 500 | Field-verified | Out of scope |
 

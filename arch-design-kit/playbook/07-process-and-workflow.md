@@ -83,8 +83,8 @@ Claude produces design intent and pre-permit documentation. Claude does not:
 | Checks, plans, IFC (zero install beyond Python) | `tools/` in this kit, in Claude Code |
 | Precise components (stairs, trusses, casework, details) | build123d or CadQuery scripts with G-SOLID-1 assertions |
 | DXF for a CAD user or consultant | ezdxf, on the D-LAYER-1 names |
-| Live 3D look-and-adjust | Blender + Bonsai with an MCP server, or the official Blender connector (desktop) |
-| Quick massing in SketchUp | the official Trimble SketchUp connector (claude.ai). Treat its output as a sketch: dimensions drift between iterations |
+| Live 3D look-and-adjust; DD modeling in BIM | **FreeCAD via your freecad-mcp server**: load the spec's IFC with `tools/freecad_load_ifc.py`, check the counts, `get_view`, and adjust ([FREECAD.md](../FREECAD.md)). Blender + Bonsai is the alternative. |
+| Massing sketches away from the desk (optional) | the official Trimble SketchUp connector (claude.ai). Treat its output as a sketch: dimensions drift between iterations |
 | Interactive 3D review for the owner | a three.js Artifact that loads the exported GLB or IFC |
 | Concept renders and mood | an image tool (for example Canva's generate-image) from a prompt written from the spec. Label it "AI-assisted concept" |
 | Redlines on a PDF drawing set | the PDF viewer's annotate skill |

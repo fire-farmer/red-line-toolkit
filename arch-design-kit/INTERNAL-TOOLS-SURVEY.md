@@ -18,6 +18,8 @@
   - Deep research.
   - Skill creation.
 
+**Your desktop modeling app is FreeCAD**, driven by the community [`freecad-mcp`](https://github.com/neka-nat/freecad-mcp) server you already have installed. It doesn't show up in the claude.ai catalog because it isn't an official connector. It still fits this kit better than SketchUp: it's free, it reads and writes real BIM (IFC) through the same IfcOpenShell library the kit's tools use, it can edit existing models, and Claude can drive it from Python. Setup and the working loop are in [FREECAD.md](FREECAD.md). SketchUp drops to optional.
+
 Research also found official **Blender** and **Autodesk Fusion** connectors (desktop and local) from Anthropic's April 2026 "Claude for Creative Work" launch, and vendor MCP servers for Revit, Archicad, Chief Architect, Rhino, Onshape and Zoo. They are in the [research report](research/reports/AI%20tools%20for%20CAD%20and%20architecture.md) rather than here, because they live outside the claude.ai catalog or need a desktop app.
 
 ## A. Already available, no install needed
@@ -40,7 +42,7 @@ Research also found official **Blender** and **Autodesk Fusion** connectors (des
 
 | Connector | What it does | Fit | Caveats |
 |---|---|---|---|
-| **Trimble SketchUp** (official, Anthropic-verified) | `build_model`, `get_docs`, `save_model`. Builds geometry in a cloud SketchUp session and returns a preview plus a `.skp` link. Works from claude.ai with nothing installed. | **Add.** Fast massing and option sketches in conversation. | New models only, with no edits to an existing `.skp`. Testers saw dimension drift and missing doors. Pricing is unclear: Trimble says the first 30 saved models are free, another source says SketchUp Go is required. Rebuild from the spec before trusting numbers. |
+| **Trimble SketchUp** (official, Anthropic-verified) | `build_model`, `get_docs`, `save_model`. Builds geometry in a cloud SketchUp session and returns a preview plus a `.skp` link. Works from claude.ai with nothing installed. | **Optional.** FreeCAD does the modeling. This only helps for massing sketches from a browser or phone, away from your desktop. | New models only, with no edits to an existing `.skp`. Testers saw dimension drift and missing doors. Pricing is unclear: Trimble says the first 30 saved models are free, another source says SketchUp Go is required. Rebuild from the spec before trusting numbers. |
 | **Autodesk Product Help** (authless) | Searches Autodesk's help documentation (Revit, AutoCAD, Fusion and others). | Add if you use any Autodesk product. | Documentation only, no modeling. |
 | **Figma** (FigJam) | Diagrams such as bubble diagrams and process maps. | Optional. | The design plugin's Figma server failed to connect in this cloud session because the network proxy refused it. It may work from claude.ai or the desktop app. |
 
@@ -58,12 +60,11 @@ Research also found official **Blender** and **Autodesk Fusion** connectors (des
 
 1. **Use the kit's own skill.** Install `arch-design-kit` as a plugin once it has its own repository (see the [README](README.md#moving-this-folder-to-its-own-repo)). It brings the playbook, the checker and the workflow into every session.
 2. **Claude Code with the Python stack** (`tools/requirements.txt`: PyYAML, IfcOpenShell, build123d, ezdxf, trimesh). All of it installs and runs headless in this cloud environment, which was verified here.
-3. **Add the Trimble SketchUp connector** on claude.ai for conversational massing.
+3. **FreeCAD + `freecad-mcp` on your desktop**, which you already have. This is the live 3D look-and-adjust loop and the design-development modeler ([FREECAD.md](FREECAD.md)). Register it with Claude Code as well as Claude Desktop, so the same session that edits the spec can also drive FreeCAD.
 4. **Add Autodesk Product Help** if Autodesk tools are in the picture.
-5. **On a desktop workstation, later:** the official Blender connector or Blender MCP with Bonsai, for a live 3D look-and-adjust loop.
+5. **Optional:** the Trimble SketchUp connector for massing sketches away from the desk; IQland for zoning and feasibility; Canva (already connected) for concept boards.
 6. **Only when the work needs it:** Chief Architect X18 (residential construction documents, experimental MCP) or Revit 2027.2 plus the revit-bim plugin (if collaborators need RVT).
-7. **Optional:** IQland for zoning and feasibility, and Canva (already connected) for concept boards.
 
 ## Environment notes from this session
 
-- The cloud environment's network blocked several hosts used during research (codes.iccsafe.org, up.codes, autodesk.com, zoo.dev, arxiv.org and others), and the design and engineering plugins' MCP servers could not connect. To let a future session verify code text ([playbook/VERIFY.md](playbook/VERIFY.md)) or reach vendor APIs, add those hosts to the environment's allowed network hosts.
+- The cloud environment's network blocked several hosts used during research (codes.iccsafe.org, up.codes, autodesk.com, zoo.dev, arxiv.org and others), and the design and engineering plugins' MCP servers could not connect. A `red-line-toolkit` environment now allows the three code sites, but they still refuse scripted reading on their own side (ICC bot protection, up.codes' robots.txt opt-out of Claude agents, the energycodes.gov firewall). Code verification is therefore a person-in-the-browser job ([playbook/VERIFY.md](playbook/VERIFY.md)). Vendor API hosts can be added to the environment when a project needs them.

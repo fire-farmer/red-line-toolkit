@@ -25,9 +25,10 @@ So every prompt should follow the same pattern: **numbers in, code to geometry, 
 
 | Surface | Reaches | Use it for |
 |---|---|---|
-| **Claude Code** (web or local) | Python: this kit's tools, IfcOpenShell, build123d/CadQuery, ezdxf, headless browser screenshots | **The main workbench.** Spec, checks, plans, IFC, components, DXF |
-| **claude.ai** | Remote connectors: Trimble SketchUp, Canva, Claude Docs; Artifacts | Briefing conversations, quick SketchUp massing, a three.js viewer Artifact, concept images, sharing |
-| **Claude Desktop + local apps** | Blender (official connector or Blender MCP), Autodesk Fusion, Rhino (RhinoAI), Revit 2027.2 / Archicad 30 / Chief Architect X18 MCP servers | Live 3D look-and-adjust, vendor drawing sets |
+| **Claude Code on your computer** | This kit's tools *and* your **FreeCAD MCP**, in one session | **The main workbench.** Spec, checks, IFC, then load, look and adjust in FreeCAD ([FREECAD.md](FREECAD.md)) |
+| **Claude Code on the web** | Python: this kit's tools, IfcOpenShell, build123d/CadQuery, ezdxf, headless FreeCAD (`freecadcmd`), browser screenshots | Spec, checks, plans, IFC and components when you're away from your desk. It cannot reach your FreeCAD. |
+| **claude.ai** | Remote connectors (Trimble SketchUp, Canva, Claude Docs); Artifacts | Briefing conversations, a three.js viewer Artifact, concept images, sharing; optional SketchUp massing sketches |
+| **Claude Desktop + other local apps** | Blender (official connector or Blender MCP), Autodesk Fusion, Rhino (RhinoAI), Revit 2027.2 / Archicad 30 / Chief Architect X18 MCP servers | Only if a project needs them |
 
 ## The prompt skeleton
 
@@ -92,7 +93,8 @@ Never claim code compliance; say "checked against the playbook baseline". </proc
 
 ## Tool-specific tips
 
-- **SketchUp connector** (claude.ai): good for fast massing and talking through options with a client. It makes new models only and can't edit an existing `.skp`. Testers saw dimensions drift between iterations and doors left out. Treat the result as a sketch, and rebuild it from the spec before trusting any number.
+- **FreeCAD (your MCP), the main 3D tool.** Generate the IFC from the spec, load it with `tools/freecad_load_ifc.py` through `execute_code`, compare the counts with the spec, then `get_view("Top")` / `("Isometric")` to look. During schematic design, never edit geometry in FreeCAD, because the next reload replaces it; put changes in the spec. Register the server with `--only-text-feedback` so screenshots come only when asked for. Prompts and version traps are in [FREECAD.md](FREECAD.md).
+- **SketchUp connector** (claude.ai, optional): for massing sketches away from your desk. It makes new models only and can't edit an existing `.skp`. Testers saw dimensions drift between iterations and doors left out. Treat the result as a sketch, and rebuild it from the spec before trusting any number.
 - **Blender, through the official connector or Blender MCP**: describe the end state, then build one change at a time. Use it to look, and keep the spec and IFC as the master. Code-executing bridges run without authentication, so keep them on localhost, run one client at a time, and turn on safe mode where it's offered.
 - **build123d / CadQuery**: named parameters at the top of the file, units in the names, and after every boolean operation, assert the volume and bounding box (G-SOLID-1). Sweeps, lofts and patterns fail most often; roofs and stairs use exactly those, so test them hardest.
 - **IfcOpenShell**: `ifcopenshell.api` for authoring. Watch units: some representation calls take millimetres while the project is in metres. `spec_to_ifc.py` documents both cases.

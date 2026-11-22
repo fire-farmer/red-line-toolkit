@@ -15,6 +15,7 @@ arch-design-kit/
 ├── README.md                    you are here
 ├── INTERNAL-TOOLS-SURVEY.md     part 1: skills, plugins, connectors to use
 ├── PROMPTING-GUIDE.md           how to prompt Claude for CAD and drawings, by phase
+├── FREECAD.md                   FreeCAD + freecad-mcp: setup, the loop, version traps
 ├── research/
 │   ├── reports/                 part 2: AI tools for CAD and architecture (the report)
 │   └── research_notes/          7 sourced note files behind the report and the playbook
@@ -38,6 +39,7 @@ arch-design-kit/
 │   ├── check_design.py          holds a design.yaml to the rulebook (stdlib + PyYAML)
 │   ├── render_plan.py           design.yaml → schematic SVG floor plans
 │   ├── spec_to_ifc.py           design.yaml → IFC4 model (spaces, walls, doors, windows, slab)
+│   ├── freecad_load_ifc.py      runs inside FreeCAD: loads that IFC and reports what FreeCAD built
 │   ├── test_tools.py            37 tests, including rulebook consistency
 │   └── requirements.txt
 ├── examples/ranch-3bed/         a worked spec + its generated plan (SVG/PNG) and IFC
@@ -58,6 +60,8 @@ python3 tools/spec_to_ifc.py  examples/ranch-3bed/design.yaml          # → exa
 python3 -m unittest discover -s tools -p "test_*.py"
 ```
 
+To see the model in your FreeCAD (with the freecad-mcp server running), ask Claude: *"Load examples/ranch-3bed/out/model.ifc in FreeCAD with the kit's loader, report the counts, then get_view Top."* See [FREECAD.md](FREECAD.md).
+
 The example plan, generated from its spec:
 
 ![Example ranch, schematic plan](examples/ranch-3bed/out/L1-plan.png)
@@ -74,8 +78,8 @@ Try breaking a rule: change Bedroom 2's egress window `net_clear_h_in` to 30, or
 ## What this is, and what it isn't
 
 - It **is** a strong, consistent design method, and it catches the dimensional and connectivity mistakes AI-drawn plans most often contain (egress, stairs, ceilings, halls, door reachability, windows into garages, overlaps, setbacks).
-- It **is not** code approval. The code baseline is the US IRC; the Authority Having Jurisdiction and a licensed professional decide compliance (W-PRO-1). Some values are marked ⚠️ until they are verified against the primary code text, because this session's network blocked the ICC site. [VERIFY.md](playbook/VERIFY.md) lists them.
-- The tools model **schematic** geometry (LOD 100–200: net room rectangles, nominal walls, openings). Design development work continues in IfcOpenShell, Bonsai/Blender or a BIM app ([playbook 06](playbook/06-drawing-and-model-standards.md#d-lod-1-level-of-development-by-phase)).
+- It **is not** code approval. The code baseline is the US IRC; the Authority Having Jurisdiction and a licensed professional decide compliance (W-PRO-1). Some values are marked ⚠️ until they are verified against the primary code text. The code sites refuse automated reading (bot protection, robots.txt opt-outs), so a person has to read them. [VERIFY.md](playbook/VERIFY.md) lists the values and how to clear them.
+- The tools model **schematic** geometry (LOD 100–200: net room rectangles, nominal walls, openings). Design development work continues in FreeCAD's BIM workbench (or IfcOpenShell scripts) ([playbook 06](playbook/06-drawing-and-model-standards.md#d-lod-1-level-of-development-by-phase)).
 
 ## Moving this folder to its own repo
 

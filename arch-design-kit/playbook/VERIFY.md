@@ -45,6 +45,18 @@ The research for this playbook ran in a sandbox whose network blocked the primar
 | Rainscreen gap | E-RAIN-1 | Building Science Corporation, cladding manufacturer |
 | NEC 240.24: panel locations | M-ELEC-1 | NFPA 70 |
 
-## To unblock this
+## How to clear this list: a person reads, Claude records
 
-Allow `codes.iccsafe.org`, `up.codes` and `energycodes.gov` in the cloud environment's network settings. Then ask Claude to "work through playbook/VERIFY.md", and it can check each item against the primary text.
+Automated reading doesn't work, and changing network settings won't fix that. On 2026-11-22 the session's network was opened to all three sites, and each one still refused scripted access on its own side:
+
+- **codes.iccsafe.org** (ICC Digital Codes): its CloudFront bot protection returns 403 to scripts.
+- **up.codes**: its robots.txt opts Claude's agents out by name (`ClaudeBot`, `Claude-User`, `Claude-Code`, `anthropic-ai`) from everything except its marketing pages. Claude respects that, including when browsing on your behalf.
+- **energycodes.gov**: its firewall answers scripted requests with "Request Rejected".
+
+So the verification is a reading job for a person. The table in [code_verification.md](../research/research_notes/Residential%20design%20standards%20baseline/code_verification.md) lists every item with the playbook's current value and empty "Code text" and "Verdict" columns:
+
+1. Open the free public view of the IRC/IECC 2021 (and 2024) at ICC Digital Codes, or your AHJ's adopted text, in your own browser.
+2. Read each section, and paste the sentence (or just the number) into the table, or into a chat with Claude.
+3. Claude updates the chapter, `RULES.md` (⚠️ → ✅) and `LIMITS` in `tools/check_design.py`, then runs the tests.
+
+The AHJ's adopted code is the text that matters for a real project anyway (W-VERIFY-1).

@@ -306,5 +306,37 @@ class Outputs(unittest.TestCase):
         self.assertGreaterEqual(len(ext), 6)
 
 
+class FreeCADLoader(unittest.TestCase):
+    """Runs tools/freecad_load_ifc.py in a real FreeCAD. Set FREECADCMD to its freecadcmd binary
+    (or have freecadcmd on PATH); skipped otherwise."""
+
+    def test_freecad_sees_what_the_spec_says(self):
+        import json
+        import os
+        import shutil
+        import subprocess
+        try:
+            import spec_to_ifc
+        except SystemExit:
+            self.skipTest("ifcopenshell not installed")
+        exe = os.environ.get("FREECADCMD") or shutil.which("freecadcmd")
+        if not exe:
+            self.skipTest("freecadcmd not available")
+        with tempfile.TemporaryDirectory() as tmp:
+            ifc = Path(tmp) / "model.ifc"
+            spec_to_ifc.build(load(str(EXAMPLE))).write(str(ifc))
+            env = dict(os.environ, IFC_PATH=str(ifc), FCSTD_PATH=str(Path(tmp) / "model.FCStd"))
+            out = subprocess.run([exe, str(HERE / "freecad_load_ifc.py")], env=env, capture_output=True,
+                                 text=True, timeout=600, cwd=tmp).stdout
+            line = next((l for l in out.splitlines() if l.startswith("FREECAD_LOAD_IFC")), None)
+            self.assertIsNotNone(line, out[-2000:])
+            report = json.loads(line.split(" ", 1)[1].replace("'", '"').replace("None", "null"))
+            counts = {k.replace("Ifc", ""): v for k, v in report["counts"].items()}
+            self.assertEqual((counts.get("Space"), counts.get("Window"), counts.get("Door")), (16, 12, 12))
+            self.assertEqual(report["invalid_shapes"], [])
+            self.assertEqual(report["missing_shapes"], [])
+            self.assertTrue((Path(tmp) / "model.FCStd").exists())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -39,6 +39,9 @@ CHECK     python3 ${CLAUDE_PLUGIN_ROOT}/tools/check_design.py design.yaml W-CHEC
 GENERATE  python3 ${CLAUDE_PLUGIN_ROOT}/tools/render_plan.py design.yaml out/
           python3 ${CLAUDE_PLUGIN_ROOT}/tools/spec_to_ifc.py design.yaml out/model.ifc   (needs ifcopenshell)
           + any modeling code, with numeric geometry assertions           G-SOLID-1, W-PARAM-1
+FREECAD   if the freecad MCP is connected: execute_code →
+            exec(open("${CLAUDE_PLUGIN_ROOT}/tools/freecad_load_ifc.py").read()); print(load_ifc("<abs>/out/model.ifc"))
+          compare the counts with the spec, then get_view("Top") / ("Isometric")   (FREECAD.md)
 LOOK      write the questions first, render, then look                    W-LOOK-1
 RECORD    DECISIONS.md with rule IDs; keep the last passing version       W-DEC-1, D-NAME-1
 ```
@@ -57,4 +60,4 @@ RECORD    DECISIONS.md with rule IDs; keep the last passing version       W-DEC-
 
 ## 5. Prompts and tool choice
 
-`${CLAUDE_PLUGIN_ROOT}/PROMPTING-GUIDE.md` has prompt patterns for each phase and says which tool to use when (SketchUp connector, Blender/Bonsai, build123d, IfcOpenShell, ezdxf, image tools). `${CLAUDE_PLUGIN_ROOT}/research/reports/` has the evidence behind those choices.
+`${CLAUDE_PLUGIN_ROOT}/PROMPTING-GUIDE.md` has prompt patterns for each phase and says which tool to use when. FreeCAD (via freecad-mcp) is the 3D tool, and `${CLAUDE_PLUGIN_ROOT}/FREECAD.md` covers its loop and version traps. Never edit geometry in FreeCAD during schematic design; change the spec. `${CLAUDE_PLUGIN_ROOT}/research/reports/` has the evidence behind those choices.
