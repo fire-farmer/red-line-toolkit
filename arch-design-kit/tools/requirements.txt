@@ -1,0 +1,7 @@
+# check_design.py and render_plan.py need only PyYAML (or pass a .json spec and need nothing).
+pyyaml>=6
+# spec_to_ifc.py (open BIM export) and the modeling stack the playbook recommends:
+ifcopenshell>=0.8
+build123d>=0.9      # precise components (stairs, trusses, casework) with geometry assertions
+ezdxf>=1.3          # DXF plans for CAD users and consultants
+trimesh>=4          # mesh checks and GLB export for three.js viewers

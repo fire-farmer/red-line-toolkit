@@ -1,0 +1,94 @@
+# design.yaml: the project's single source of truth (playbook W-SPEC-1, 06).
+# Copy into the project folder, then fill in with Claude during schematic design.
+# Check:     python3 <kit>/tools/check_design.py design.yaml
+# Plans:     python3 <kit>/tools/render_plan.py design.yaml out/
+# IFC model: python3 <kit>/tools/spec_to_ifc.py design.yaml out/model.ifc
+#
+# Conventions (D-UNITS-1, D-AXES-1):
+#   units: in -> every *_in value is inches (use "mm" for metric; the keys keep their names)
+#   +x = east, +y = north, origin = south-west corner of the main house, z = finished floor
+#   rect: [x, y, width_along_x, depth_along_y]  = NET room size (inside finished walls)
+
+project:
+  name: <project name>
+  units: in
+  phase: schematic                # programming | schematic | design-development | construction-documents
+  jurisdiction:
+    country: US
+    code: IRC 2021                # the edition the AHJ adopted
+    energy_code: IECC 2021
+    ahj: <city/county>
+    climate_zone: <e.g. 4A>
+  style: <module from playbook/styles/catalog.md>
+  fuel_fired_appliances: false    # gas or other fuel appliances -> CO alarm rules (C-ALARM-3)
+  universal_design: false         # true -> SP-UD checks
+
+site:
+  lot_in: [0, 0]                  # [width along x, depth along y]; 0 = not entered yet
+  setbacks_in: {north: 0, south: 0, east: 0, west: 0}
+  street_side: <north|south|east|west>
+  building_origin_in: [0, 0]      # where the plan origin sits on the lot
+
+roof:
+  form: gable                     # gable | hip | shed | flat | cross-gable | butterfly
+  pitch: "6:12"
+  framing: trusses                # trusses | rafters
+  cathedral: false                # rafters without ties -> ridge beam (S-ROOF-2)
+  clear_span_in: 0
+  overhang_in: 18
+
+# Local amendments only. Give every override a reason (02, W-DEC-1).
+limits: {}
+#  hall_min_w_in: {value: 42, reason: "City of X amendment 12.3"}
+
+levels:
+  - id: L1
+    name: Main level
+    elevation_in: 0
+    ceiling_in: 108
+    # below_grade: true           # basement: habitable rooms need escape openings, grade-floor area allowed
+    egress_doors:
+      - {id: D-ENTRY, room: ENTRY, wall: N, width_in: 36, clear_width_in: 34, clear_height_in: 79.5}
+    alarms:
+      # - {type: smoke, room: BR2}      # smoke | co | combo; every bedroom + outside sleeping areas + every story
+    rooms:
+      # - id: BR2
+      #   name: Bedroom 2
+      #   type: bedroom                 # see playbook 06 for the type list; type drives the rules
+      #   rect: [0, 0, 132, 132]
+      #   doors: [{to: HALL, width_in: 32}]   # on the shared wall; swings into THIS room; offset_in optional
+      #   open_to: [GREAT]              # cased opening / open plan, no door (G-CONN-1 reachability)
+      #   ceiling_in: 108               # optional; defaults to the level's
+      #   windows:
+      #     - wall: S                   # N | S | E | W
+      #       width_in: 30
+      #       height_in: 60
+      #       sill_in: 24
+      #       offset_in: 18             # optional: from the room's west (N/S walls) or south (E/W walls) corner
+      #       above_grade_in: 30        # optional: triggers window fall protection checks (C-GUARD-2)
+      #       egress: {net_clear_w_in: 26, net_clear_h_in: 54}   # manufacturer NET clear opening
+      # - id: BATH2
+      #   type: bath
+      #   rect: [0, 132, 132, 96]
+      #   fixtures:
+      #     wc: {side_clear_in: 18, front_clear_in: 30}
+      #     shower: {w_in: 36, d_in: 48}
+      # - id: KITCHEN
+      #   type: kitchen
+      #   rect: [294, 192, 180, 168]
+      #   kitchen: {work_aisle_in: 48, cooks: 2}
+      # - id: GARAGE
+      #   type: garage
+      #   rect: [672, 72, 264, 288]
+      #   opens_to: [MUD]
+      # - id: GREAT
+      #   type: living
+      #   rect: [174, 0, 300, 192]
+      #   beam: "LVL at gridline 3, engineer to size"   # acknowledges an S-SPAN-1 warning
+    stairs:
+      # - {id: ST1, to_level: L2, risers: 16, tread_in: 10.5, width_in: 40,
+      #    headroom_in: 82, handrail_in: 36, rect: [x, y, 40, 230],
+      #    from_room: FOYER, to_room: LANDING}       # connects the levels for G-CONN-1
+    guards:
+      # - {id: LOFT-EDGE, drop_in: 120, height_in: 36}
+    # garage_separation: {wall: ..., ceiling: ..., door: ...}   # required with an attached garage (C-GAR-1)
