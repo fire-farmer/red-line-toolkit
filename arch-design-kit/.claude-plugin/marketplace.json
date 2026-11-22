@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "arch-design-kit",
+  "description": "Design playbook, rulebook and tools for prompting Claude to design and model houses and small structures.",
+  "owner": {
+    "name": "Scott Oliver",
+    "url": "https://redlinedigital.dev"
+  },
+  "plugins": [
+    {
+      "name": "arch-design-kit",
+      "source": "./",
+      "description": "The arch-design-playbook skill plus the playbook, templates, spec checker, plan renderer, IFC exporter and FreeCAD loader.",
+      "version": "0.2.0",
+      "category": "design",
+      "license": "MIT"
+    }
+  ]
+}
