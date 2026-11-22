@@ -10,28 +10,24 @@ These are the real commands we run inside our AI coding agent — a set of inter
 
 ## What's in the box
 
-**Commands** (`/name`)
+**Commands** (`/name`) — eight, in [the order](https://redlinedigital.dev/guides/the-order/) you meet them. You run six; the pipelines run `/change-heavy` (reached through `/cleanup-light`, still runnable directly) and `/pre-commit-check`.
 
 | Command | What it does | Guide |
 |---|---|---|
-| `/change-heavy` | The heavy pipeline, for a change that alters a computed or printed figure, a stored, imported or exported data shape, an auth, RLS, tier or payment path, or adds a new data model or API shape: plan → parallel critics with a Fable plan critic → adjudicate and lock → implement → simplify → review with a decorrelated Fable audit → re-audit of the fixes | [guide](https://redlinedigital.dev/guides/change-heavy/) |
-| `/cleanup-light` | The standard pipeline for every other change, at any file count, with a quick lane for small covered fixes: PLAN + Fable plan critique when warranted, a review panel the diff picks, adjudication, a Fable audit on every run, the pre-commit audit, then a local commit; hands off when a change meets the heavy trigger | [guide](https://redlinedigital.dev/guides/cleanup-light/) |
-| `/cluster-fus` | Reports the follow-up backlog by group step and recommends the next one to schedule | [guide](https://redlinedigital.dev/guides/cluster-fus/) |
-| `/module-build` | Apex pipeline for a new module: concept → architecture sketch → phased page breakdown, locked as a spec | [guide](https://redlinedigital.dev/guides/module-build/) |
-| `/module-sprint` | Walks a locked spec through the page pipeline (design → code → implement) | [guide](https://redlinedigital.dev/guides/module-sprint/) |
-| `/page-design` | Per-page design pipeline: 3 parallel critics → adjudicate → lock | [guide](https://redlinedigital.dev/guides/page-design/) |
-| `/page-code` | Per-page code-planning pipeline: 3 parallel critics → security-asymmetric adjudication → lock | [guide](https://redlinedigital.dev/guides/page-code/) |
-| `/page-implement` | Executes a locked code plan: simplify, verify, one review (pr-review, `/security-review` and a Fable audit in parallel), adjudicate, commit | [guide](https://redlinedigital.dev/guides/page-implement/) |
-| `/module-audit` | Pre-ship module audit: components × lenses + cross-cutting axes + adversarial layer, SHA-anchored verification | [guide](https://redlinedigital.dev/guides/module-audit/) |
-| `/mobile-audit` | Mobile-responsiveness audit at 375px across four layers, adversarially verified | [guide](https://redlinedigital.dev/guides/mobile-audit/) |
-| `/competitive-anchor` | Pre-scope competitive comparison against your competitive-landscape doc, refreshed when it's stale | — |
-| `/pre-commit-check` | Pre-commit auditor: verifies the commit body matches the diff, scope discipline, and follow-up capture. Diagnostic only | [guide](https://redlinedigital.dev/guides/pre-commit-check/) |
 | `/start-session` | Start-of-session orientation from the ledger report: a short brief, warnings, and the owner's open questions | [guide](https://redlinedigital.dev/guides/start-session/) |
 | `/end-session` | End-of-session sync: the handoff, lesson evidence, FU filing, the ledger audit, and a commit with ledger footers | [guide](https://redlinedigital.dev/guides/end-session/) |
+| `/cleanup-light` | The pipeline for any change — an FU, a group step, a campaign step, a named task — at any file count, with a quick lane for small covered fixes: PLAN + Fable plan critique when warranted, a review panel the diff picks, adjudication, a Fable audit on every run, the pre-commit audit, then a local commit; hands itself to `/change-heavy` when a change meets the heavy trigger | [guide](https://redlinedigital.dev/guides/cleanup-light/) |
+| `/change-heavy` | The heavy pipeline, for a change that alters a computed or printed figure, a stored, imported or exported data shape, an auth, RLS, tier or payment path, or adds a new data model or API shape, and for planning a module from its locked design: plan → parallel critics with a Fable plan critic → adjudicate and lock → implement → simplify → review with a decorrelated Fable audit → re-audit of the fixes | [guide](https://redlinedigital.dev/guides/change-heavy/) |
+| `/page-design` | Per-screen design: two or three directions drawn at 375px and desktop with realistic data, three critics on the rendered screens (one a decorrelated Fable seat), adjudication, the leader rebuilt as an in-repo mockup and measured, then your lock | [guide](https://redlinedigital.dev/guides/page-design/) |
+| `/module-audit` | Pre-ship module audit: the module's browser specs, components × lenses + cross-cutting axes, an adversarial layer with a Fable miss hunt, SHA-anchored verification beside a Fable fix-plan critique | [guide](https://redlinedigital.dev/guides/module-audit/) |
+| `/mobile-audit` | Mobile-responsiveness audit at 375px across four layers, adversarially verified; its fixes go through `/cleanup-light` | [guide](https://redlinedigital.dev/guides/mobile-audit/) |
+| `/pre-commit-check` | Pre-commit auditor: verifies the commit body matches the diff, scope discipline, and follow-up capture. Diagnostic only | [guide](https://redlinedigital.dev/guides/pre-commit-check/) |
 
-**Agents** — `the-adjudicator` ([guide](https://redlinedigital.dev/guides/adjudicator/)) is the read-only referee that marks each critique KEEP / DITCH / MODIFY against your project's actual standards. `fable-seat` is the decorrelated auditor every Fable stage dispatches. The `module-*` fleet (recon, lens-critic, cross-cut-critic, red-team, steelman, repro-sketcher, synthesizer, verifier, fix-planner) powers `/module-audit`.
+**The order.** Every session is `/start-session` → the work → `/end-session`. Any change runs `/cleanup-light`. A new module starts with its design spec, written in conversation with `superpowers:brainstorming` and approved by you; then `/page-design` per screen; then `/cleanup-light "plan <module> from <locked design>"`, which becomes a `/change-heavy` planning run that writes the module's campaign; then each campaign step through `/cleanup-light`. Closing a module is `/module-audit`, its fix groups through `/cleanup-light`, then `/mobile-audit` and its fixes.
 
-**Reference docs** ([`reference/`](reference/)) — the text the commands share, kept once: what the pipelines share (the rigor trigger, risk paths, the review panel, the anchor sweep, the Fable seats, models and effort), the decision gates (what a run decides and reports versus what waits for the owner), the LedgerLoop lifecycle and session steps, and the prompting cheat sheet sections the pipelines cite.
+**Agents** — `the-adjudicator` ([guide](https://redlinedigital.dev/guides/adjudicator/)) is the read-only referee that marks each critique KEEP / DITCH / MODIFY against your project's actual standards. `fable-seat` is the decorrelated auditor every Fable stage dispatches. The `module-*` fleet (recon, lens-critic, cross-cut-critic, red-team, steelman, synthesizer, verifier, fix-planner) powers `/module-audit`.
+
+**Reference docs** ([`reference/`](reference/)) — the text the commands share, kept once: what the pipelines share (the rigor trigger, risk paths, the review panel, the anchor sweep, the Fable seats, models and effort, browser specs, a module's design spec, building from a locked design and the pre-commit audit), the decision gates (what a run decides and reports versus what waits for the owner), the LedgerLoop lifecycle and session steps, and the prompting cheat sheet sections the pipelines cite.
 
 **The ledger** ([`scripts/ledger.mjs`](scripts/ledger.mjs) + [`lib/`](lib/)) — LedgerLoop: it checks a project's lessons and follow-ups every session, issues their IDs, scores lessons on the evidence footers in your commits, and stops the session commit when a limit is broken. Node only, no dependencies.
 
@@ -75,7 +71,7 @@ The pipelines compose other tools. Without them, the stages that call them will 
 - `CAMPAIGN.md` — one campaign's plan (Phases → Steps), with the table where group steps get scheduled
 - `VISION.md` — the destination and the identity constraints (the yardstick)
 - `MEMORY.md` — the owner's preferences and feedback; lessons never go here
-- `rulebook/` — the starter rulebook (`R-1`…`R-26`), its backstories and a `projects.json`, for `~/.claude`
+- `rulebook/` — the starter rulebook (22 rules, `R-1`…`R-27`), its backstories and a `projects.json`, for `~/.claude`
 
 See [`THE-SYSTEM.md`](THE-SYSTEM.md) for how they fit, or [`QUICKSTART.md`](QUICKSTART.md) to stand them up.
 

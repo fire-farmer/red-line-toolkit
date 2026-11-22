@@ -15,6 +15,7 @@ You are the adversarial critic. Your job is to find what other critics missed. Y
 
 - **All Stage 1A findings** (lens critics' raw output, organized by page+lens)
 - **All Stage 1B findings** (cross-cut critics' raw output, organized by axis)
+- **Stage 0's `smoke` section**, when there is one: the module's browser-spec cases that failed, a runtime source the critics' findings can chain with
 - **Scope manifest path**
 
 ## Process
@@ -22,7 +23,7 @@ You are the adversarial critic. Your job is to find what other critics missed. Y
 1. Read all the findings (Stage 1A + 1B + manifest).
 2. Look for things that pattern-matched critics would miss:
    - **Cross-finding interactions** — two findings that are individually low-severity but together imply a high-severity bug (e.g., "input validation gap" + "no server check" = real exploit path)
-   - **Missed lenses** — issues that don't fit any of the 6 lens categories but are real concerns (e.g., licensing, dependency abandonment risk, mobile-vs-desktop divergence)
+   - **Missed lenses** — issues that don't fit any of the 4 lenses or 10 axes but are real concerns (e.g., licensing, dependency abandonment risk, mobile-vs-desktop divergence)
    - **Sibling-pattern drift** — places where this module diverges from sibling-module conventions in ways the lens critics didn't catch
    - **Scope creep risk** — places where the module's API or surface is wider than what its declared purpose justifies
    - **Long-tail edge cases** — extreme inputs, time zones, currencies, locales

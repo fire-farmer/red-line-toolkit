@@ -28,7 +28,7 @@ User's invocation argument: **$ARGUMENTS**
 **FU integrity** — flags (a) any anchored FU whose cited code moved/was deleted (drift = stale location citation) and (b) any FU homed at a CLOSED phase (`stale-home` = the close-time GC was skipped). Read-only report:
 - !`if [ -f package.json ] && npm run 2>/dev/null | grep -q 'verify:fus'; then npm run verify:fus 2>&1 | grep -E '^(DRIFT|STALE-HOME|FU anchors:)' || echo "⚠️  verify:fus emitted no summary — integrity check may be broken; run it manually: npm run verify:fus"; else echo "FU integrity: n/a — no verify:fus script (a migrated project's ledger.mjs audit checks anchors; a light project has plain-bullet FUs)"; fi`
 
-If STACK.md doesn't exist → output: "No STACK.md found. No active major effort. Suggest running /module-build to start one, or the `superpowers:brainstorming` skill to explore an open-ended idea first."
+If STACK.md doesn't exist → output: "No STACK.md found. No active major effort. A new module starts with its design spec (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § A module's design spec); a change runs `/cleanup-light`; the `superpowers:brainstorming` skill explores an open-ended idea first."
 
 There is no separate handoff file — the previous session's handoff is STACK's Current location. To see the *prior* handoff (forensic), use `git show <sha>:STACK.md`.
 
@@ -109,9 +109,9 @@ Emit each that applies (each warning is a `⚠️` line):
 | Multi-session conflict detected (Stage 3) | `⚠️  Possible multi-session conflict — STACK touched by another session since last /end-session. Review commits before acting.` |
 | Plan file referenced in STACK doesn't exist | `⚠️  Broken plan link: <path>. The active phase's plan file was renamed or deleted.` |
 | FU anchor drift (Stage 1 verify:fus reported > 0 drifted) | `⚠️  FU anchor drift: N anchored FU(s) no longer match cited code. Run npm run verify:fus for detail; re-anchor or resolve before relying on those FUs.` |
-| Orphaned FU home (Stage 1 verify:fus reported > 0 stale-home) | `⚠️  Orphaned FUs: N FU(s) homed at a CLOSED phase — the close-time GC was skipped. Re-home each → Standing or an open phase (run /cluster-fus to disposition) before the home lies further. See the STALE-HOME lines for which.` |
+| Orphaned FU home (Stage 1 verify:fus reported > 0 stale-home) | `⚠️  Orphaned FUs: N FU(s) homed at a CLOSED phase — the close-time GC was skipped. Re-home each → Standing or an open phase before the home lies further. See the STALE-HOME lines for which.` |
 | Promotion candidates exist (Stage 4) | `💡 N In-force lessons have survived 3+ audits — the next /end-session lessons audit weighs them for promotion.` |
-| FU type-cluster at batch threshold (2 or more same-type) | `💡 N <type> FUs cluster together → /cleanup-light batch-ready (or /change-heavy when the batch meets the project's Heavy-rigor trigger). Run /cluster-fus for the full bucketing.` |
+| FU type-cluster at batch threshold (2 or more same-type) | `💡 N <type> FUs cluster together → /cleanup-light batch-ready (or /change-heavy when the batch meets the project's Heavy-rigor trigger).` With the `full` argument, list each batch's members below it (`what — home — {anchor}`; a legacy row may be `file:line — what`), give an untagged row the type its description and the CLAUDE.md taxonomy suggest, marked `(inferred)`, and note a batch that spans STACK and Standing-FUs, a sign the work crosses the phase boundary. |
 | Standing FU whose trigger may have fired (Nth caller now exists, date passed) | `💡 Standing FU "<x>" trigger may have fired — re-evaluate.` |
 | Push-eligible (Phase-close reached) | `💡 Push-eligible (N commits ahead; phase closed). Consider pushing before starting next effort.` |
 | STACK has empty Open follow-ups + no active phase | `💡 Stack appears complete. Consider running stack-close audit ritual (promote In-force lessons, reset STACK).` |
@@ -144,7 +144,7 @@ Ready to proceed. Recommended first action: <verbatim from STACK Current locatio
 
 | Situation | Handling |
 |---|---|
-| STACK.md doesn't exist | Output: "No active stack. Start a major effort with /module-build or /change-heavy, or explore an open-ended idea with the `superpowers:brainstorming` skill." Exit. |
+| STACK.md doesn't exist | Output: "No active stack. A new module starts with its design spec (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § A module's design spec); a change runs `/cleanup-light`; the `superpowers:brainstorming` skill explores an open-ended idea." Exit. |
 | Git not initialized or no commits | Output: "Repo state unusual. Verify git state before proceeding." Exit. |
 | Stage 2's ahead-of line prints `(none)` or `n/a` (no upstream or no `origin/main`) | Skip push-state checks. Note absence in brief. |
 | STACK.md exists but is malformed (no Current location section) | Output: "STACK.md missing required sections. Run /end-session in last working session or repair manually." Exit. |

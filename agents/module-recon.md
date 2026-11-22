@@ -60,11 +60,11 @@ For each form component, use Read + Grep to extract:
 - Migrations: `*.sql` in `supabase/migrations/` for this module's tables (record file list or "none")
 - New deps: `git log -p package.json` since module's first commit (best-effort)
 - Tier-gated features: grep for `tierAccess`, `canAccessBilling`, `requiresTier`, sibling patterns
+- Browser specs: the spec files in the project's browser suite that name a route in scope, by a grep for each route prefix (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Browser specs; for example `tests/visual/*.spec.ts`); `none` when no spec names one, `no suite` when the project has no browser suite
 
 ### Step 6 — Per-component staleness
 - `git log -1 --format="%h %s" -- <component-path>` for last touching commit
-- Grep recent commit messages for `/page-implement` involving this component
-- Default `stale: true` if no `/page-implement` commit found (include in Stage 1A)
+- Every form component recon enumerates is stale (Stage 1A audits it); `/module-audit`'s `--components` narrows what it enumerates, before recon runs
 
 ## Output
 
@@ -116,6 +116,7 @@ Write to the path provided. Use this EXACT structure:
 - migrations: [<list | "none">]
 - new-dependencies: [<list | "none in scope">]
 - tier-gated-features: [<list>]
+- browser-specs: [<list | "none" | "no suite">]
 - new-stores: [<list>]
 - new-hooks: [<list>]
 
@@ -131,8 +132,9 @@ AUDIT_SHA: <full sha>
 WORKING_TREE_CLEAN: <true | false>
 STALE_COMPONENTS: <count>
 TOTAL_COMPONENTS: <count>
-ESTIMATED_DISPATCH_COUNT: <C*4 + 10 + 3 + 4>   # lens(C×4) + cross-cut(10) + adversarial(3) + synth/adj/fix-plan/verifier(4)
+ESTIMATED_DISPATCH_COUNT: <C*4 + 10 + 3 + 5>   # lens(C×4) + cross-cut(10) + adversarial(3: red team, Fable miss hunt, steelman) + synth/adj/fix-plan/verifier/fix-plan critique(5)
 COHERENCE_WARNING: <none | "working tree dirty on audited paths — lens-critic citations may not match AUDIT_SHA; orchestrator commits its own session's edits first, or halts">
+BROWSER_SPECS: <comma-separated spec paths | none | no suite>
 ```
 
 ## Forbidden actions

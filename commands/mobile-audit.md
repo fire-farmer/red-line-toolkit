@@ -1,5 +1,5 @@
 ---
-description: Mobile-responsiveness audit at 375px. Scope is inferred from your prompt — a page, a module, or the whole app. Runs 4 layers (static, runtime-measured, throttled trace + Lighthouse, mobile-UX critique), adversarially verifies each HIGH finding to cut false positives, assigns each route works/minor/rework, and writes an audit doc (one page) or a phased Campaign (full app). Diagnostic only — never auto-fixes; hands fixes to /page-implement. Self-reviews on full-app runs (hands new lessons to /end-session and lists unused skills as suggestions).
+description: Mobile-responsiveness audit at 375px. Scope is inferred from your prompt — a page, a module, or the whole app. Runs 4 layers (static, runtime-measured, throttled trace + Lighthouse, mobile-UX critique), adversarially verifies each HIGH finding to cut false positives, assigns each route works/minor/rework, and writes an audit doc (one page) or a phased Campaign (full app). Diagnostic only — never auto-fixes; hands fixes to /cleanup-light. Self-reviews on full-app runs (hands new lessons to /end-session and lists unused skills as suggestions).
 argument-hint: '[natural-language scope — e.g. "the dashboard", "the billing module", "the whole app"; omit for changed routes]'
 allowed-tools: Read, Write, Edit, Bash, Agent, Skill, Workflow, WebSearch, mcp__Claude_Browser__preview_start, mcp__Claude_Browser__preview_list, mcp__Claude_Browser__preview_stop, mcp__Claude_Browser__resize_window, mcp__Claude_Browser__javascript_tool, mcp__Claude_Browser__computer, mcp__Claude_Browser__read_page, mcp__Claude_Browser__read_console_messages, mcp__plugin_chrome-devtools-mcp_chrome-devtools__navigate_page, mcp__plugin_chrome-devtools-mcp_chrome-devtools__emulate, mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_snapshot, mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot, mcp__plugin_chrome-devtools-mcp_chrome-devtools__lighthouse_audit, mcp__plugin_chrome-devtools-mcp_chrome-devtools__performance_start_trace, mcp__plugin_chrome-devtools-mcp_chrome-devtools__performance_analyze_insight, mcp__plugin_chrome-devtools-mcp_chrome-devtools__evaluate_script, mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_console_messages
 disallowed-tools: AskUserQuestion
@@ -9,7 +9,7 @@ disallowed-tools: AskUserQuestion
 
 # /mobile-audit
 
-You are running the **/mobile-audit pipeline** — a scope-adaptive mobile-responsiveness audit at 375px. It runs the same 4-layer diagnostic on whatever you point it at: one page, a module's routes, or the whole app. **Diagnostic only — never auto-fix.** The fixer is `/page-implement`, invoked later from the findings.
+You are running the **/mobile-audit pipeline** — a scope-adaptive mobile-responsiveness audit at 375px. It runs the same 4-layer diagnostic on whatever you point it at: one page, a module's routes, or the whole app. **Diagnostic only — never auto-fix.** The fixer is `/cleanup-light`, invoked later from the findings.
 
 User's invocation argument (the scope, in plain language): **$ARGUMENTS**
 
@@ -46,7 +46,7 @@ Output the route list + weight (LIGHT/HEAVY) before proceeding.
 The runtime layers share one browser session and **cannot** be parallelized — capture is always sequential. Screenshots **must be saved to disk** (a subagent critic can only read a file path, never an inline image), under the gitignored scratch `docs/audits/_mobile-triage/<ISO-date>/shots/`.
 
 - **LIGHT:** capture inline. Per route: `navigate_page` → `emulate` `375x812x2,mobile,touch` + dark → `take_screenshot` `{filePath: shots/<slug>.png, fullPage:true}` → `take_snapshot` → the measured collector (Stage 1 Layers below).
-- **HEAVY:** write and run a Playwright capture script (one run logs in + visits every route + screenshots + measures → `measured.json`). **This beats serial MCP for full-app** — one process vs ~3 round-trips per route. Reuse your app's auth setup (log in through the login form → wait for the authed landing route; wait for any gating state — e.g. a plan/tier flag — to persist in localStorage, or gated routes bounce to `/`). Use generous timeouts on first hit — Next dev compiles each route on first navigation.
+- **HEAVY:** write and run a Playwright capture script (one run logs in + visits every route + screenshots + measures → `measured.json`). **This beats serial MCP for full-app** — one process vs ~3 round-trips per route. Sign in by reusing your browser suite's saved session: load the `storageState` file its global setup writes, minted server-side so a CAPTCHA never blocks it (run the suite once to refresh it). Don't log in through a form that has a live CAPTCHA: it refuses a scripted sign-in. Without a saved session, log in through the form and wait for any gating state (a plan or tier flag, say) to persist, or gated routes bounce to `/`. Use generous timeouts on first hit — Next dev compiles each route on first navigation.
 
 Each route yields a bundle: `{ route, screenshotPath, snapshot, measured: [{layer,severity,category,detail,fix}] }`.
 
@@ -102,7 +102,7 @@ Per-route verdict — judged on **page-specific** issues (systemic counted once,
 Write it without asking (tier 1). A layer or route that failed to capture is re-run first, or named in the artifact as missing.
 
 - **LIGHT → audit doc** `docs/audits/<ISO-date>-mobile-audit-<slug>.md` — per-route findings (HIGH/MED with file:line + fix), verdict, 🔴/🟡 evidence screenshots referenced.
-- **HEAVY → Campaign doc** `docs/audits/<ISO-date>-mobile-ux-campaign.md` (campaign form, Effort→Phase→Step): triage table at top (route · verdict · H · M · one-liner), then phases ordered **systemic-first, then severity × surface importance**, each Step → `/page-implement`. Frontmatter `status: proposed`, layers, verdict tally, artifact paths.
+- **HEAVY → Campaign doc** `docs/audits/<ISO-date>-mobile-ux-campaign.md` (campaign form, Effort→Phase→Step): triage table at top (route · verdict · H · M · one-liner), then phases ordered **systemic-first, then severity × surface importance**, each Step → `/cleanup-light`. Frontmatter `status: proposed`, layers, verdict tally, artifact paths.
 
 Always anchor to CLAUDE.md "every page mobile responsive (375px)" + STYLE_GUIDE.
 
@@ -138,13 +138,13 @@ Skip Stage 7 entirely on LIGHT runs (not enough signal; not worth the tokens).
 
 ## Done
 
-Summarize: artifact path; verdict tally 🟢/🟡/🔴 + HIGH/MED counts; false-positives the verify pass refuted; which of the 4 layers ran (note fallbacks: static-only / no-lighthouse / measured-only); any skipped routes (skipped-needs-id, intentional-redirect); Stage 7 outcome (lessons handed on, notes appended, skills suggested) on HEAVY runs; next step (`/page-implement` per 🔴 Step). Confirm the scratch was pruned.
+Summarize: artifact path; verdict tally 🟢/🟡/🔴 + HIGH/MED counts; false-positives the verify pass refuted; which of the 4 layers ran (note fallbacks: static-only / no-lighthouse / measured-only); any skipped routes (skipped-needs-id, intentional-redirect); Stage 7 outcome (lessons handed on, notes appended, skills suggested) on HEAVY runs; next step (`/cleanup-light` per 🔴 Step). Confirm the scratch was pruned.
 
 ---
 
 ## Notes for Claude executing this command
 
-- **Diagnostic only.** Never auto-fix. `/page-implement` is the fixer; a 375px Playwright baseline (in your visual-test dir) is the regression guard after a fix.
+- **Diagnostic only.** Never auto-fix. `/cleanup-light` is the fixer; a 375px Playwright baseline (in your visual-test dir) is the regression guard after a fix.
 - **Scope is inferred from the prompt** — no `--scope` flag. Default to changed routes; an ambiguous prompt takes the narrower scope, so it can't spawn the HEAVY workflow by accident.
 - **Don't skip Stage 3.** Raw critic output has false positives (a waitlist-gate near-miss). Verify HIGHs before they reach the artifact. (Capture/disk invariants are stated once in Stage 1.)
 - **Stage 7 hands lessons on and appends notes; it never edits this command.** Telemetry (Stage 6) is the data the future cross-pipeline `/schedule` assessment will read — keep it tagged `"pipeline":"mobile-audit"` in the single shared `metrics.jsonl`.

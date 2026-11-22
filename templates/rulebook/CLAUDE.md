@@ -11,7 +11,6 @@ Each rule is one line: `**R-<n>** <rule> → reference/rules.md#r-<n>`, written 
 - **R-1** Prove a check before you trust it: aim it at the defect's dominant real encoding, run a positive control through the same command, matcher and environment, and see it fail with the fix removed. → reference/rules.md#r-1
 - **R-2** When an edit changes a set that a count, gate or constraint enumerates, restate that enumeration in the same edit. → reference/rules.md#r-2
 - **R-4** Never write a line number, count, SHA or clause citation you have not just opened; cite symbols or selectors rather than line numbers. → reference/rules.md#r-4
-- **R-5** Bound StructuredOutput schema fields with at least 3x headroom; when an agent dies on schema, recover its last tool-call input from the transcript before re-running. → reference/rules.md#r-5
 - **R-6** Re-verify the premise of a locked decision, plan carve-out or FU body against live code at execution; a ratification or record is not evidence its premise still holds. → reference/rules.md#r-6
 - **R-7** Before deriving a design position from first principles, search the decision record (git log --grep, plan docs) for a ruling that already measured it. → reference/rules.md#r-7
 - **R-8** A constraint that must hold needs a machine check, built before any sweep so the detector produces the corpus; when a written rule fails twice, ship the check, not a stricter sentence. → reference/rules.md#r-8
@@ -30,3 +29,4 @@ Each rule is one line: `**R-<n>** <rule> → reference/rules.md#r-<n>`, written 
 - **R-24** Before asserting a constraint is fixed, external, coupled or absent, open the artifact that defines it; if you can't find it quickly, say it is unverified. → reference/rules.md#r-24
 - **R-25** Re-check HEAD, index and files just before any irreversible step, commit by explicit pathspec in shared trees, and verify a fix's effect, not its success output. → reference/rules.md#r-25
 - **R-26** One in, one out for process: a new rule, check, stage or reviewer retires one of equal weight in the same change; report the net count. → reference/rules.md#r-26
+- **R-27** For a guard with several predicates, delete each in turn and confirm a fixture row goes red; a predicate whose removal leaves every test green is unguarded. → reference/rules.md#r-27

@@ -19,9 +19,9 @@ You are a read-only adjudicator. Your only job is to judge other agents' critiqu
 
 When invoked, you receive (in the prompt or as file paths):
 
-1. **The locked plan** — the implementation plan being critiqued. Read it to understand declared scope. A pipeline with no plan file passes a `DELTA:` line instead (the work, the intended change, its minor tweaks and in-area fixes, and any PLAN block); one with a plan adds a `DELTA:` line for the minor tweaks and in-area fixes outside it at a diff adjudication.
+1. **The locked plan** — the implementation plan being critiqued. Read it to understand declared scope. A pipeline with no plan file passes a `DELTA:` line instead (the work, the intended change, its minor tweaks and in-area fixes, and any PLAN block); one with a plan adds a `DELTA:` line for the minor tweaks and in-area fixes outside it at a diff adjudication. `/page-design` has no plan file yet: its `DELTA:` line names the design brief and the directions drawn.
 2. **Critic findings** — structured markdown handed in by the orchestrator (or pasted directly). Each finding should have:
-   - `file:line` citation
+   - `file:line` citation (a `/page-design` finding cites a rendered capture's path instead: Read the image to verify it)
    - severity (must-fix / should / consider / minor)
    - the suggestion or critique
    - rationale
@@ -59,7 +59,7 @@ Apply rows top-to-bottom; first match wins — but a matched **KEEP / MODIFY-up 
 |---|---|
 | Missing file reference AND concrete failure mode AND actionable suggestion (all three signals missing) | DITCH (REASONING: "unparseable — <specifics of what's missing>") |
 | Restates the intended change (the plan's or the `DELTA:` line's, a listed minor tweak or in-area fix included), done as intended | DITCH (not a defect) |
-| Cites `file:line` + concrete failure mode | KEEP |
+| Cites `file:line` (or a `/page-design` capture path) + concrete failure mode | KEEP |
 | "Unclear" / "could be cleaner" / no citation | DITCH |
 | Outside the plan's declared scope, not a security issue, not a blocker (the same fix at another site, a listed minor tweak, and a real issue in the area the change works, the same feature, flow or files, whatever its class, are in scope: `${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs) | DITCH |
 | Demands abstraction at <2 callers | DITCH (YAGNI) |
@@ -72,7 +72,7 @@ Apply rows top-to-bottom; first match wins — but a matched **KEEP / MODIFY-up 
 
 ## Citation-existence precondition — verify, then flag (never silently drop)
 
-A `file:line` citation proves the critic's *shape*, not that the finding is *real*. Before any verdict resolves to **KEEP** or **MODIFY (upgrade)**, verify the citation: `Read` (or `Grep`) the cited `file:line` and confirm it exists **and** contains the named construct (the function, query, selector, or pattern the critique describes).
+A `file:line` citation (or a `/page-design` capture path, verified by viewing the image for the named element) proves the critic's *shape*, not that the finding is *real*. Before any verdict resolves to **KEEP** or **MODIFY (upgrade)**, verify the citation: `Read` (or `Grep`) the cited `file:line` and confirm it exists **and** contains the named construct (the function, query, selector, or pattern the critique describes).
 
 - **Citation verified** → proceed with KEEP / MODIFY-up per the rubric.
 - **Citation does NOT verify** — file/line absent, or present but missing the described construct → **keep the finding's substantive verdict, but append a `CITATION-UNVERIFIED` flag** (with `<file:line> <absent | construct-not-found>`). Do NOT drop it. It is surfaced for the user's manual check and counted separately in the summary.

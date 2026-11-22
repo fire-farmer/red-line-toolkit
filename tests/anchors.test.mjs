@@ -234,6 +234,18 @@ describe('beyond verify-fus.core.test.ts', () => {
     for (const id of ['7', '7.8a-C', '7.8a', '8']) assert.ok(!closed.has(id), `expected open: ${id}`);
   });
 
+  it('parseClosedPhases reads a **Phase <n>** label as well as **P<n>**, and its Done: list', () => {
+    const stack = [
+      '  - [x] **Phase 0** — P0, the baseline',
+      '  - [x] **Phase 2** — P1 schema · P2b',
+      '  - [ ] **Phase 3** — P3 core. Done: 3.2 Open: 3.1',
+      '  - [ ] **Phasey 4** — not a label',
+    ].join('\n');
+    const closed = parseClosedPhases(stack);
+    for (const id of ['0', '2', '3.2']) assert.ok(closed.has(id), `expected closed: ${id}`);
+    for (const id of ['3', '3.1', '4']) assert.ok(!closed.has(id), `expected open: ${id}`);
+  });
+
   it('parsePhaseHomes keeps the split-half suffix and skips blockquotes and Standing', () => {
     const homes = parsePhaseHomes('- x — home: DesignRevamp/7.8a-M\n> - home: Example/1.1\n- y — home: Standing');
     assert.deepEqual(homes.map((h) => `${h.campaign}/${h.slice}`), ['DesignRevamp/7.8a-M']);
@@ -277,7 +289,7 @@ describe('beyond verify-fus.core.test.ts', () => {
 
   it('unrecognizedPhaseLines: phase-labelled lines in ## Phases that are not **P<n> checkbox bullets, by line number; blockquotes and other sections are not phase lines', () => {
     const stack = [
-      '# STACK', '## Phases', '- [x] **P1 Setup**', '- [x] P2 Build', '  - [ ] **Phase 3** — next', '- [ ] **P4 x** — Done: 4.1',
+      '# STACK', '## Phases', '- [x] **P1 Setup**', '- [x] P2 Build', '  - [ ] **Phase-3** — next', '- [ ] **P4 x** — Done: 4.1',
       '> - [x] P9 example', '## Security', '- [ ] rotate the key',
     ].join('\n');
     assert.deepEqual(unrecognizedPhaseLines(stack), [4, 5]);
@@ -297,11 +309,11 @@ describe('beyond verify-fus.core.test.ts', () => {
       '- ✅ **P6 Build**',
       '- ~~**P7 Build**~~',
       '- **P8 Build** — no checkbox',
-      '- [x] **Phase 9** — CLOSED',
+      '- [x] **Phase 9** — CLOSED (a read label since 2026-11-18)',
       '  - [x] **3A — Manage sprint**',
     ].join('\n');
-    assert.deepEqual(unrecognizedPhaseLines(stack), [4, 5, 6, 7, 8, 9, 10, 11]);
-    assert.deepEqual([...parseClosedPhases(stack)], []);
+    assert.deepEqual(unrecognizedPhaseLines(stack), [4, 5, 6, 7, 8, 9, 10]);
+    assert.deepEqual([...parseClosedPhases(stack)], ['9']);
   });
 
   // A fixed list of markers before the label missed 🏁, ✅ with a variation selector, links, emphasis and code spans,

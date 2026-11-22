@@ -51,8 +51,8 @@ test("no limit is restated outside lib/rules.mjs and the lifecycle doc's Numbers
     `${RULES.rulebookPromotionPhases} or more separate phases`,
   ];
   const files = [
-    'commands/start-session.md', 'commands/end-session.md', 'commands/cleanup-light.md', 'commands/change-heavy.md', 'commands/cluster-fus.md',
-    'commands/page-implement.md', 'commands/module-audit.md', 'commands/mobile-audit.md',
+    'commands/start-session.md', 'commands/end-session.md', 'commands/cleanup-light.md', 'commands/change-heavy.md',
+    'commands/module-audit.md', 'commands/mobile-audit.md',
     'templates/rulebook/CLAUDE.md', 'reference/ledger-lifecycle.md', 'reference/ledger-session.md', ...CODE,
   ];
   const restated = files.flatMap((file) => {

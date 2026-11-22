@@ -39,6 +39,7 @@ Backstory: A multi-lens review found every measured mechanism claim reproduced e
 
 Rule: Bound StructuredOutput schema fields with at least 3x headroom; when an agent dies on schema, recover its last tool-call input from the transcript before re-running.
 Backstory: Several read-only auditors in a large fan-out hit the retry cap because one `maxLength`-bounded string overflowed on their final StructuredOutput call, after all their investigation was done; the full result sat in the rejected tool-call input in the agent's transcript. Loosening the bounds for a second run still lost one, and a re-run rarely reproduces the first run's evidence.
+Outcome: retired, one in, one out for R-26, to make room for R-27. Of the rules then in force it alone had never been cited or credited with a catch in any project's commit footers.
 
 ## R-6
 
@@ -151,3 +152,8 @@ Backstory: An `--amend` rewrote another session's commit because HEAD had advanc
 
 Rule: One in, one out for process: a new rule, check, stage or reviewer retires one of equal weight in the same change; report the net count.
 Backstory: In one stretch every process run added machinery, and the run meant to retire checks retired none while adding a registry, a footer and per-run paperwork. Only a subtraction pass held to a hard net-negative rule came out lean. Process grows one incident at a time and shrinks only when something forces it, so subtraction has to be the default for every process change. No check enforces the rule.
+
+## R-27
+
+Rule: For a guard with several predicates, delete each in turn and confirm a fixture row goes red; a predicate whose removal leaves every test green is unguarded.
+Backstory: A guard against orphaned modules shipped with its plan's positive control: a fixture with a row per import form, proven red on the current tree and on a deleted module put back. A reviewer then removed one predicate at a time and found four the fixture couldn't see (a test-file filter, two arms of the is-a-test check, and one branch of the scaffolding rule), each able to break with the suite green; a test analyzer doing the same found four more. One fixture row per predicate closed each, and every mutant was then run and seen red. The same day, a "the line is omitted" UI test would have passed for the wrong reason, because its fixture never met the block's render condition. A guard proven red on the known violation is proven for that encoding only: each predicate it relies on is a separate claim.

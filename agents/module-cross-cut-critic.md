@@ -16,6 +16,7 @@ You audit an entire module on ONE cross-cutting axis. The axis name is passed in
 - **Scope manifest path** (from Stage 0)
 - **Axis name** — one of: `deps`, `bundle`, `types`, `observability`, `migration`, `cost`, `reversibility`, `tier-gating`, `test-coverage`, `a11y-static`
 - Optionally: **baseline reference** (e.g., main branch commit) for diff axes
+- For `test-coverage`: the path of Stage 0's `smoke_results.md`, or that the browser specs didn't run
 
 ## Axis rubrics
 
@@ -87,6 +88,7 @@ Apply ONLY the rubric matching your axis.
   - Component-level test exists? (look for sibling `*.test.tsx`)
   - If not, flag at appropriate severity per CLAUDE.md "Coverage expansion priorities"
 - Note any tests pinned to known-bad behavior (characterization tests with `// flagged as latent bug` comments) that lack a corresponding `.skip()` / `.todo()` for the fix-direction
+- **Browser-spec cases.** For each form component, does a case in a functional browser spec drive its main flow (enter a realistic scenario, see the figure, save, reopen, see it reload)? Read the manifest's `browser-specs` and the `smoke_results.md` your prompt names (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Browser specs); never run the browser suite yourself, since Stage 0 already ran it. List the components whose flow no case drives in ONE finding, cited at `module-level`, whose fix writes the cases. With `browser-specs: no suite`, add a `NOTE: no browser suite` line after your findings or your `NO_FINDINGS_AT_THIS_AXIS` line, never in place of them: adding a suite is the project's call.
 
 ### a11y-static
 - Read shared primitives in `src/components/<module>/shared.tsx` (or equivalent) and `src/components/ui/`.

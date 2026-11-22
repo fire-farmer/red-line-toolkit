@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   FU_SECTION, LESSON_SECTION, STEP_ID, sectionLines, rowsOutside, legacyFindingLines, parseLessons, parseRules, parseFus, parseTrigger,
-  parseStepOrderPointers, parseStepIds, maxId,
+  parseStepOrderPointers, parseStepIds, maxId, fuMentions,
 } from '../lib/rows.mjs';
 
 const STACK = `# STACK
@@ -258,4 +258,24 @@ test('group steps: a row without a real Order is not scheduled, and a row too sh
 test('maxId scans every text and ignores other prefixes', () => {
   assert.equal(maxId(['FU-3 and FU-941', 'L-12', 'FU-10'], 'FU'), 941);
   assert.equal(maxId(['nothing here'], 'L'), 0);
+});
+
+test('fuMentions reads an FU ID and the shorthand plans write for several, never a quoted example', () => {
+  const ids = (text) => [...fuMentions(text)];
+  assert.deepEqual(ids('FU-120, xFU-5, FU-6x and FU-7.'), ['FU-120', 'FU-7']);
+  assert.deepEqual(ids('FU-1396/1397, FU-1136/FU-1137 and FU-2 / FU-3'), ['FU-1396', 'FU-1397', 'FU-1136', 'FU-1137', 'FU-2', 'FU-3']);
+  assert.deepEqual(ids('lane 2\'s FU-1490–1493 are folded'), ['FU-1490', 'FU-1491', 'FU-1492', 'FU-1493']);
+  assert.deepEqual(ids('FU-10—FU-12'), ['FU-10', 'FU-11', 'FU-12']);
+  // Twenty wide fills; past that, or backwards, a range names its far end only when that end is written as an ID.
+  assert.equal(ids('FU-1–21').length, 21);
+  assert.deepEqual(ids('FU-1–22'), ['FU-1']);
+  assert.deepEqual(ids('FU-1–FU-22'), ['FU-1', 'FU-22']);
+  assert.deepEqual(ids('FU-1–FU-900 and FU-9–3'), ['FU-1', 'FU-900', 'FU-9']);
+  // A bare number that doesn't touch the slash or dash is prose, not an ID.
+  assert.deepEqual(ids('FU-1482 — 3 call sites; FU-12 — 2026 plan; FU-1490 – 1500 lines; FU-1136 / 1137; FU-1482/7.3; FU-3–7.3'), ['FU-1482', 'FU-12', 'FU-1490', 'FU-1136', 'FU-3']);
+  // A spaced dash between two IDs names the two, not the run between them.
+  assert.deepEqual(ids('FU-1045 — FU-1050'), ['FU-1045', 'FU-1050']);
+  // A comma list names its first ID only; a hyphen is no range.
+  assert.deepEqual(ids('FU-1046, 1072, 1090 and FU-1490-1493'), ['FU-1046', 'FU-1490']);
+  assert.deepEqual(ids('> - **FU-1** example\n```\nFU-2 in code\n```\n~~~\nFU-4\n~~~\nFU-3 after'), ['FU-3']);
 });

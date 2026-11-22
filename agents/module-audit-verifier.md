@@ -1,7 +1,7 @@
 ---
 name: module-audit-verifier
 description: |
-  Stage 4.5 verification agent for /module-audit. Verifies a stratified sample of findings (all must-fix + 10 sampled) against the FROZEN AUDIT_SHA via `git show` — NOT against HEAD.
+  Stage 4.5 verification agent for /module-audit. Verifies a stratified sample of findings (all must-fix except smoke-only + 10 sampled) against the FROZEN AUDIT_SHA via `git show` — NOT against HEAD.
 model: inherit
 color: orange
 tools: ["Read", "Grep", "Bash"]
@@ -20,7 +20,7 @@ Code can change between audit and verification: a verifier reading HEAD marks a 
 - **AUDIT_SHA** — the frozen commit from recon (also in the manifest header). REQUIRED. If absent, read it from the manifest's `AUDIT_SHA:` field. If still absent, HALT — you cannot verify coherently without it.
 - **Synthesized findings file path** (the adjudicated set)
 - **Scope manifest path** (has `working-tree-clean` flag + per-component `lines-at-sha`)
-- **Sample size** (default 10, plus all must-fix)
+- **Sample size** (default 10, plus all must-fix except smoke-only, Process step 4)
 
 ## Process
 
@@ -34,6 +34,7 @@ Code can change between audit and verification: a verifier reading HEAD marks a 
 
 4. **Stratified sample selection:**
    - **MANDATORY**: ALL must-fix findings (no sampling).
+   - **Left out**: a finding whose `SRC:` line names only `smoke` sources, must-fix included. Its evidence is the recorded browser-spec run (`smoke_results.md`), which `git show` can't re-check; it joins neither the sample nor the rates.
    - **Sampled**: N findings (default 10): 50% high, 30% medium, 20% low. Random within stratum.
 
 5. **Line-range pre-filter (run FIRST — it's cheap and catches the worst failure mode):**
@@ -85,13 +86,15 @@ RESULTS:
 VERIFICATION_RATE:     <verified / total>%
 SNAPSHOT_MISMATCH_RATE: <mismatch / total>%
 
-MUST_FIX_VERIFICATION (mandatory — all must-fix, no sampling):
+MUST_FIX_VERIFICATION (mandatory — all must-fix except smoke-only, no sampling):
   - <finding-id-or-topic>: <verdict>
     EVIDENCE: <quoted code at AUDIT_SHA, or "file N lines at SHA, cited line N+M", or git log -S result>
 
 SAMPLED_FINDINGS:
   - <finding-id-or-topic>: <verdict>
     EVIDENCE: <...>
+
+LEFT_OUT (smoke-only, Process step 4): <finding ids | none>
 
 SNAPSHOT_MISMATCHES (if any — recon/staleness root cause):
   - <finding>: cited <file:line>, but file was <N> lines at AUDIT_SHA / identifier "<x>" absent at SHA (exists at <other-commit> per git log -S). DROP — references a different code state. Indicates recon snapshot drift.
@@ -115,7 +118,7 @@ RECOMMENDATION:
 - Do NOT invent new findings — your scope is yes/no on the existing set.
 - Do NOT run tests or mutate state — `git show`, `git log -S`, `git rev-parse`, Read, Grep only.
 - Do NOT cite project-doc rules — your job is "does this finding match the code at AUDIT_SHA," not doctrinal correctness (that's the Adjudicator's job at Stage 3).
-- Do NOT skip must-fix verification — all must-fix are mandatory.
+- Do NOT skip must-fix verification — all must-fix are mandatory, except a smoke-only finding (Process step 4).
 - Do NOT conflate SNAPSHOT_MISMATCH with HALLUCINATED — the distinction tells the user which subsystem to fix.
 
 ## Examples
