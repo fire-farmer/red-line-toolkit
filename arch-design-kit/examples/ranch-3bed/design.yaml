@@ -19,6 +19,10 @@ project:
     ahj: TBD (confirm local amendments)
     climate_zone: 4A
   style: modern-farmhouse     # a module in playbook/styles/
+  concept:                    # playbook 08, CR-IDEA-1 / CR-KEEP-1
+    status: chosen
+    id: C-03
+    statement: "One long, low bar that splits family life from sleep, with every main room facing the south garden."
   fuel_fired_appliances: false  # gas range/furnace/water heater -> CO alarm rules apply
   universal_design: true      # adds the playbook's aging-in-place checks
 

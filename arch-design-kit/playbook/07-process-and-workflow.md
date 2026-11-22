@@ -50,9 +50,16 @@ Each phase ends at a gate (W-GATE-1). Its checklist in [CHECKLISTS.md](CHECKLIST
 - **Output:** `PROGRAM.md`, a bubble diagram, and a site diagram.
 - **Lock:** program, total area budget, accessibility tier.
 
+### 1.5 · Concept (LOD 000–100): range first, then choice
+
+- **Before anything is drawn**, the readiness check runs: `tools/ready_check.py`, which the plugin's prompt hook also triggers automatically. If the brief, program, taste, precedents or concept are missing, Claude **stops, warns the owner, and offers the concept studio** (CR-GATE-1).
+- **Do:** the [`concept-studio`](../skills/concept-studio/SKILL.md) skill: design questions, the obvious list, 8–12 concepts from parallel lenses, parametric families, a separate critic, a shortlist of 3, owner reactions logged to `TASTE.md`, then push the pick ([08](08-concept-design.md)).
+- **Output:** `CONCEPTS.md` (the concept board), contact sheets, and the concept statement recorded in `design.yaml`.
+- **Lock:** the concept, or a recorded decision to skip it.
+
 ### 2 · Schematic design (LOD 100–200)
 
-- **Do:** 2–3 distinct plan options as specs. Check each, render each, and compare them against the foundation principles (01) and the brief. Refine the chosen one. Settle massing, roof form and style module, the structural strategy (S-STACK, S-SPAN flags resolved or logged), and the stair arithmetic (C-STAIR-2/6).
+- **Do:** develop the chosen concept (CR-KEEP-1). Where the concept phase was skipped, make 2–3 distinct plan options as specs. Check each, render each, and compare them against the foundation principles (01) and the brief. Refine the chosen one. Settle massing, roof form and style module, the structural strategy (S-STACK, S-SPAN flags resolved or logged), and the stair arithmetic (C-STAIR-2/6).
 - **Output:** `design.yaml` passing with zero errors, SVG plans, an IFC massing and space model, simple elevations and a 3D view, and a code summary draft.
 - **Lock:** plan layout, room sizes, massing, roof, style, structural strategy.
 

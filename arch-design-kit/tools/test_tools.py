@@ -306,6 +306,107 @@ class Outputs(unittest.TestCase):
         self.assertGreaterEqual(len(ext), 6)
 
 
+class CreativeLayer(unittest.TestCase):
+    """Playbook 08: the readiness gate, the hook and the variant explorer."""
+
+    def fresh_project(self, tmp: str) -> Path:
+        import shutil
+        proj = Path(tmp) / "proj"
+        shutil.copytree(HERE.parent / "templates", proj)
+        return proj
+
+    def fill(self, proj: Path) -> None:
+        brief = (proj / "PROJECT-BRIEF.md").read_text().replace("<project name>", "Oak Hill")
+        for i, line in enumerate([l for l in brief.splitlines() if l.rstrip().endswith(":") and l.startswith("- ")][:8]):
+            brief = brief.replace(line, f"{line} answer {i}", 1)
+        (proj / "PROJECT-BRIEF.md").write_text(brief)
+        program = (proj / "PROGRAM.md").read_text().replace(
+            "| … | | | | | | | |",
+            "\n".join(f"| R{i} | Room {i} | bedroom | 11×12 | 132 | x | bed | |" for i in range(6)))
+        (proj / "PROGRAM.md").write_text(program)
+        taste = (proj / "TASTE.md").read_text()
+        starred = [l for l in taste.splitlines() if l.startswith("- ★")][:5]
+        for line in starred:
+            taste = taste.replace(line, line + (" 4" if "dial" in line else " because I love light"), 1)
+        (proj / "TASTE.md").write_text(taste)
+        (proj / "PRECEDENTS.md").write_text((proj / "PRECEDENTS.md").read_text()
+                                            + "\n### Magney House\n- Move to take: roof\n### Azuma House\n- Move to take: court\n")
+
+    def test_blank_project_is_not_ready(self):
+        import ready_check
+        with tempfile.TemporaryDirectory() as tmp:
+            result = ready_check.check(self.fresh_project(tmp))
+            self.assertFalse(result["ready"])
+            self.assertEqual(set(result["missing"]), {"brief", "program", "taste", "precedents", "concept"})
+
+    def test_filled_project_with_concept_is_ready(self):
+        import ready_check
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = self.fresh_project(tmp)
+            self.fill(proj)
+            self.assertEqual(ready_check.check(proj)["missing"], ["concept"])
+            spec = (proj / "design.yaml").read_text().replace(
+                "    status: exploring", "    status: chosen").replace(
+                "    statement:                    #", '    statement: "A house that is one long wall."  #')
+            (proj / "design.yaml").write_text(spec)
+            self.assertTrue(ready_check.check(proj)["ready"], ready_check.check(proj)["items"])
+
+    def test_deliberate_skip_counts_as_decided(self):
+        import ready_check
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = self.fresh_project(tmp)
+            self.fill(proj)
+            spec = (proj / "design.yaml").read_text().replace("    status: exploring", "    status: skipped").replace(
+                '    # skip_reason: "owner wants a straightforward builder-style plan"',
+                '    skip_reason: "owner wants a builder plan"')
+            (proj / "design.yaml").write_text(spec)
+            self.assertTrue(ready_check.check(proj)["concept_decided"])
+
+    def test_hook_warns_once_and_only_for_design_prompts(self):
+        import json
+        import subprocess
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = self.fresh_project(tmp)
+
+            def run(prompt, session):
+                event = json.dumps({"prompt": prompt, "cwd": str(proj), "session_id": session})
+                return subprocess.run([sys.executable, str(HERE / "ready_check.py"), "--hook"], input=event,
+                                      capture_output=True, text=True, timeout=30)
+            first = run("lay out the floor plan", f"s-{tmp}")
+            self.assertEqual(first.returncode, 0)
+            self.assertIn("CR-GATE-1", first.stdout)
+            self.assertEqual(run("lay out the floor plan", f"s-{tmp}").stdout, "")   # once per session
+            self.assertEqual(run("what time is it?", f"t-{tmp}").stdout, "")           # not a design prompt
+            bad = subprocess.run([sys.executable, str(HERE / "ready_check.py"), "--hook"], input="not json",
+                                 capture_output=True, text=True, timeout=30)
+            self.assertEqual((bad.returncode, bad.stdout), (0, ""))                     # never breaks a session
+
+    def test_hook_file_points_at_the_script(self):
+        import json
+        hooks = json.loads((HERE.parent / "hooks" / "hooks.json").read_text())
+        command = hooks["hooks"]["UserPromptSubmit"][0]["hooks"][0]["command"]
+        self.assertIn("tools/ready_check.py", command)
+        self.assertTrue((HERE / "ready_check.py").exists())
+
+    def test_checker_warns_without_a_concept(self):
+        spec = load(str(HERE.parent / "templates" / "design.yaml"))
+        self.assertIn("CR-GATE-1", rules(spec, "WARN"))
+        self.assertNotIn("CR-GATE-1", rules(load(str(EXAMPLE)), "WARN"))
+
+    def test_explorer_keeps_different_partis_that_pass(self):
+        import explore_variants
+        with tempfile.TemporaryDirectory() as tmp:
+            gen = HERE.parent / "examples" / "bar-house" / "variants.py"
+            self.assertEqual(explore_variants.main([str(gen), "--n", "200", "--keep", "6", "--out", tmp]), 0)
+            kept = sorted(Path(tmp).glob("V*.yaml"))
+            self.assertEqual(len(kept), 6)
+            partis = {load(str(p))["project"]["name"].split("·")[1].strip() for p in kept}
+            self.assertEqual(partis, {"linear", "L", "U"})        # range, not six copies of one idea
+            for p in kept:
+                self.assertEqual(rules(load(str(p)), "ERROR"), set())
+            self.assertTrue((Path(tmp) / "index.html").exists())
+
+
 class FreeCADLoader(unittest.TestCase):
     """Runs tools/freecad_load_ifc.py in a real FreeCAD. Set FREECADCMD to its freecadcmd binary
     (or have freecadcmd on PATH); skipped otherwise."""

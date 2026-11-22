@@ -29,21 +29,29 @@ arch-design-kit/
 │   ├── 05-space-planning.md     room targets, NKBA kitchens/baths, circulation, UD tiers
 │   ├── 06-drawing-and-model-standards.md   units, spec format, LOD, IFC, NCS sheets/layers
 │   ├── 07-process-and-workflow.md          the loop, phases and gates, professional boundary
+│   ├── 08-concept-design.md     creativity: readiness, surprise dial, lenses, critic, push then pull
+│   ├── precedents.md            starter library: 20 houses, each with the move to take
 │   ├── CHECKLISTS.md            per-iteration check + gate checklists
 │   ├── VERIFY.md                values to confirm against the primary code text
 │   └── styles/                  style-module system + catalog of 12 American styles
 ├── templates/                   copy into each new project
 │   ├── CLAUDE.md                makes every session in the project follow the playbook
 │   ├── PROJECT-BRIEF.md · PROGRAM.md · DECISIONS.md · design.yaml
+│   ├── TASTE.md · PRECEDENTS.md · CONCEPTS.md   the creative groundwork
 ├── tools/
 │   ├── check_design.py          holds a design.yaml to the rulebook (stdlib + PyYAML)
 │   ├── render_plan.py           design.yaml → schematic SVG floor plans
 │   ├── spec_to_ifc.py           design.yaml → IFC4 model (spaces, walls, doors, windows, slab)
 │   ├── freecad_load_ifc.py      runs inside FreeCAD: loads that IFC and reports what FreeCAD built
+│   ├── ready_check.py           "are we ready to design?": brief, program, taste, precedents, concept
+│   ├── explore_variants.py      searches a concept family; keeps the most different that pass
 │   ├── test_tools.py            37 tests, including rulebook consistency
 │   └── requirements.txt
 ├── examples/ranch-3bed/         a worked spec + its generated plan (SVG/PNG) and IFC
+├── examples/bar-house/          a concept-family generator for explore_variants.py
 ├── skills/arch-design-playbook/ the Claude skill that loads all of this automatically
+├── skills/concept-studio/       the creative concept phase (playbook 08)
+├── hooks/hooks.json             warns before design work when the creative groundwork is missing
 └── .claude-plugin/plugin.json   makes the folder installable as a Claude Code plugin
 ```
 
@@ -68,12 +76,23 @@ The example plan, generated from its spec:
 
 Try breaking a rule: change Bedroom 2's egress window `net_clear_h_in` to 30, or delete Bedroom 3's `doors:` line, and run the checker. It reports the failing rule ID (C-EGR-2, G-CONN-1) and the code section.
 
+## Creativity is built in
+
+The playbook makes designs correct; [chapter 08](playbook/08-concept-design.md) makes them worth building. Before anything gets drawn, Claude checks readiness and **warns you** if your taste, precedents or a chosen concept are missing, so you never have to remember the method. The `concept-studio` skill then:
+
+- bans the obvious answers;
+- generates 8–12 different concepts in parallel through separate lenses;
+- searches concept families with `explore_variants.py`;
+- has a separate critic judge boldness;
+- pushes your pick further, then protects its idea through every later fix.
+
 ## Starting a project
 
 1. Make a project folder and copy `templates/*` into it. Set the kit path in the copied `CLAUDE.md`.
 2. Tell Claude: *"New house project. Follow CLAUDE.md. Start with the brief."*
-3. Claude interviews you for the brief, then the program, then builds `design.yaml` in the loop: **spec → check → generate → look → record** ([playbook 07](playbook/07-process-and-workflow.md)).
-4. At each phase end, Claude runs the gate checklist and asks for your sign-off.
+3. Claude interviews you for the brief and program, then your taste and precedents, and runs the concept studio ([playbook 08](playbook/08-concept-design.md)).
+4. The chosen concept becomes `design.yaml`, built in the loop: **spec → check → generate → look → record** ([playbook 07](playbook/07-process-and-workflow.md)).
+5. At each phase end, Claude runs the gate checklist and asks for your sign-off.
 
 ## What this is, and what it isn't
 

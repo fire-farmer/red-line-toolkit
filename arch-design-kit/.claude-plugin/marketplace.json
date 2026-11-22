@@ -10,8 +10,8 @@
     {
       "name": "arch-design-kit",
       "source": "./",
-      "description": "The arch-design-playbook skill plus the playbook, templates, spec checker, plan renderer, IFC exporter and FreeCAD loader.",
-      "version": "0.2.0",
+      "description": "The arch-design-playbook and concept-studio skills, a pre-design readiness hook, the playbook, templates, spec checker, plan renderer, IFC exporter, variant explorer and FreeCAD loader.",
+      "version": "0.3.0",
       "category": "design",
       "license": "MIT"
     }

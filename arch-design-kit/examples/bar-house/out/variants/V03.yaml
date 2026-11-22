@@ -1,0 +1,210 @@
+project:
+  name: "Bar house \xB7 L \xB7 V03"
+  units: in
+  phase: concept
+  jurisdiction:
+    country: US
+    code: IRC 2021
+  concept:
+    status: exploring
+    statement: 'Rooms strung along bars: a sleeping bar with its own gallery and a
+      living bar facing the sun, joined at the front door.'
+roof:
+  form: shed
+  pitch: '3:12'
+  framing: trusses
+  clear_span_in: 229
+levels:
+- id: L1
+  name: Main level
+  elevation_in: 0
+  ceiling_in: 108
+  egress_doors:
+  - id: D-ENTRY
+    room: ENTRY
+    wall: S
+    width_in: 36
+    clear_width_in: 34
+    clear_height_in: 79.5
+  alarms:
+  - type: smoke
+    room: BRP
+  - type: smoke
+    room: BR2
+  - type: smoke
+    room: BR3
+  - type: combo
+    room: HALL
+  - type: combo
+    room: GREAT
+  rooms:
+  - id: BRP
+    name: Primary Bedroom
+    type: bedroom
+    rect:
+    - 0
+    - 216
+    - 174
+    - 192
+    doors:
+    - to: HALL
+      width_in: 32
+    windows:
+    - wall: W
+      width_in: 30
+      height_in: 60
+      sill_in: 24
+      egress:
+        net_clear_w_in: 26
+        net_clear_h_in: 54
+    - wall: W
+      width_in: 30
+      height_in: 60
+      sill_in: 24
+  - id: BATHP
+    name: Primary Bath
+    type: bath
+    rect:
+    - 0
+    - 408
+    - 174
+    - 96
+    doors:
+    - to: HALL
+      width_in: 32
+    fixtures:
+      wc:
+        side_clear_in: 18
+        front_clear_in: 30
+      shower:
+        w_in: 36
+        d_in: 48
+  - id: BR2
+    name: Bedroom 2
+    type: bedroom
+    rect:
+    - 0
+    - 504
+    - 174
+    - 120
+    doors:
+    - to: HALL
+      width_in: 32
+    windows:
+    - wall: W
+      width_in: 30
+      height_in: 60
+      sill_in: 24
+      egress:
+        net_clear_w_in: 26
+        net_clear_h_in: 54
+    - wall: W
+      width_in: 30
+      height_in: 60
+      sill_in: 24
+  - id: BATH2
+    name: Bath 2
+    type: bath
+    rect:
+    - 0
+    - 624
+    - 174
+    - 72
+    doors:
+    - to: HALL
+      width_in: 32
+    fixtures:
+      wc:
+        side_clear_in: 18
+        front_clear_in: 30
+      shower:
+        w_in: 36
+        d_in: 48
+  - id: BR3
+    name: Bedroom 3
+    type: bedroom
+    rect:
+    - 0
+    - 696
+    - 174
+    - 120
+    doors:
+    - to: HALL
+      width_in: 32
+    windows:
+    - wall: W
+      width_in: 30
+      height_in: 60
+      sill_in: 24
+      egress:
+        net_clear_w_in: 26
+        net_clear_h_in: 54
+    - wall: W
+      width_in: 30
+      height_in: 60
+      sill_in: 24
+  - id: HALL
+    name: Gallery
+    type: hall
+    rect:
+    - 174
+    - 216
+    - 42
+    - 600
+    open_to:
+    - ENTRY
+  - id: ENTRY
+    name: Entry
+    type: foyer
+    rect:
+    - 0
+    - 0
+    - 216
+    - 216
+    open_to:
+    - GREAT
+  - id: GREAT
+    name: Great Room
+    type: living
+    rect:
+    - 216
+    - 0
+    - 264
+    - 216
+    open_to:
+    - KITCHEN
+    windows:
+    - wall: S
+      width_in: 72
+      height_in: 84
+      sill_in: 12
+    - wall: S
+      width_in: 72
+      height_in: 84
+      sill_in: 12
+  - id: KITCHEN
+    name: Kitchen
+    type: kitchen
+    rect:
+    - 480
+    - 0
+    - 144
+    - 216
+    kitchen:
+      work_aisle_in: 48
+      cooks: 2
+    windows:
+    - wall: N
+      width_in: 60
+      height_in: 42
+      sill_in: 42
+  - id: LAUNDRY
+    name: Laundry / Mud
+    type: laundry
+    rect:
+    - 624
+    - 0
+    - 60
+    - 216
+    open_to:
+    - KITCHEN

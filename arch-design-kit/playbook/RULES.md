@@ -171,6 +171,24 @@ Section numbers are IRC **2021**. The 2024 IRC renumbered much of Chapter 3, so 
 | W-VERIFY-1 | Confirm ⚠️ values against the adopted code text before construction documents. | Method | ○ |
 | W-PRO-1 | Output is design intent. A licensed professional and the AHJ approve construction, and Claude never claims code compliance. | Method | ○ |
 
+## CR — Concept and creativity ([08-concept-design.md](08-concept-design.md))
+
+| ID | Rule | Kind | Auto |
+|---|---|---|---|
+| CR-GATE-1 | Before schematic plans or models, a concept is chosen and recorded (`project.concept`), or the skip is recorded with a reason. Claude warns and asks before designing when it isn't. | Method | ● |
+| CR-TASTE-1 | Read `TASTE.md` (with its surprise dial) and `PRECEDENTS.md` before generating concepts. After every review, log the owner's reactions in their own words. | Method | ○ |
+| CR-HARD-1 | While exploring, only hard limits apply: the envelope, the area budget ±15%, life-safety feasibility, must-haves. Every other rule waits for convergence. | Method | ○ |
+| CR-OBVIOUS-1 | Write down the five most predictable answers first. No concept may be one of them. | Method | ○ |
+| CR-SPREAD-1 | Generate 8–12 concepts that differ on named axes (parti, section, ground, light, outdoor, what it's about), recorded in a spread matrix. | Method | ○ |
+| CR-IDEA-1 | Every concept has a one-sentence generative idea (not a style, not a feature list), a key move, a section idea and what it gives up. | Method | ○ |
+| CR-LENS-1 | Generate concepts in separate parallel contexts, one lens each: site, light and climate, ritual, structure and material, constraint, contrarian. | Method | ○ |
+| CR-SPECIFIC-1 | Feed every lens specifics: site facts, owner rituals, precedent moves with the reason, a cross-domain analogy. | Method | ○ |
+| CR-SEARCH-1 | Explore concept families parametrically. Keep the most different variants that pass the checker (`explore_variants.py`). | Method | ○ |
+| CR-CRITIC-1 | A separate critic scores originality, coherence, site fit, delight and taste fit, and says what would make each concept more surprising. | Method | ○ |
+| CR-PUSH-1 | Push the chosen concept about 30% further than comfortable (scaled by the surprise dial), then converge without breaking its statement. | Method | ○ |
+| CR-KEEP-1 | Test the design against its concept statement at every gate. Breaking it is an owner decision, logged, never a side effect. | Method | ● (shown) |
+| CR-ATMOS-1 | Images set mood and atmosphere only, labeled AI-assisted, and are never used for geometry. | Method | ○ |
+
 ## G — Geometry integrity ([06-drawing-and-model-standards.md](06-drawing-and-model-standards.md#model-integrity))
 
 | ID | Rule | Kind | Auto |

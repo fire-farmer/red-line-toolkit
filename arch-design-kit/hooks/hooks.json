@@ -1,0 +1,16 @@
+{
+  "description": "arch-design-kit: before design work in a project folder, warn when the creative groundwork (brief, program, taste, precedents, concept) is missing (playbook 08, CR-GATE-1).",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/tools/ready_check.py\" --hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

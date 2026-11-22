@@ -1,11 +1,20 @@
 {
   "name": "arch-design-kit",
-  "description": "A design playbook, rulebook and toolkit for prompting Claude to design and model houses and small structures: US IRC code baseline, structure, envelope, space planning, drawing/BIM standards, style modules, a spec checker, plan renderer and IFC exporter, and the arch-design-playbook skill.",
-  "version": "0.2.0",
+  "description": "A design playbook, rulebook and toolkit for prompting Claude to design and model houses and small structures: US IRC code baseline, structure, envelope, space planning, drawing/BIM standards, style modules, a spec checker, plan renderer and IFC exporter, a creative concept phase (concept-studio skill, readiness hook, variant explorer), and the arch-design-playbook skill.",
+  "version": "0.3.0",
   "author": {
     "name": "Scott Oliver",
     "url": "https://redlinedigital.dev"
   },
   "license": "MIT",
-  "keywords": ["architecture", "cad", "bim", "ifc", "floor-plan", "residential", "building-code", "playbook"]
+  "keywords": [
+    "architecture",
+    "cad",
+    "bim",
+    "ifc",
+    "floor-plan",
+    "residential",
+    "building-code",
+    "playbook"
+  ]
 }

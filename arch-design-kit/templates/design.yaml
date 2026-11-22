@@ -20,6 +20,11 @@ project:
     ahj: <city/county>
     climate_zone: <e.g. 4A>
   style: <module from playbook/styles/catalog.md>
+  concept:                        # playbook 08: set by the concept phase (CR-GATE-1, CR-KEEP-1)
+    status: exploring             # exploring | chosen | skipped
+    id:                           # e.g. C-04 from CONCEPTS.md
+    statement:                    # one sentence, the generative idea (not a style, not a feature list)
+    # skip_reason: "owner wants a straightforward builder-style plan"   # only with status: skipped
   fuel_fired_appliances: false    # gas or other fuel appliances -> CO alarm rules (C-ALARM-3)
   universal_design: false         # true -> SP-UD checks
 

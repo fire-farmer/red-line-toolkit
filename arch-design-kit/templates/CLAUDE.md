@@ -4,12 +4,14 @@ This folder is an architectural design project. Every session follows the **Desi
 
 ## Before doing anything
 
-1. Read `PROJECT-BRIEF.md`, `PROGRAM.md` and the latest entries in `DECISIONS.md`.
+1. Read `PROJECT-BRIEF.md`, `PROGRAM.md`, `TASTE.md`, `PRECEDENTS.md`, `CONCEPTS.md` and the latest entries in `DECISIONS.md`.
 2. Read `<KIT>/playbook/RULES.md`, then open the chapter for the task in front of you.
 3. Check the phase in `design.yaml` (`project.phase`) and work only on that phase's tasks (playbook 07).
 
 ## Non-negotiables
 
+- **Readiness before drawing (CR-GATE-1).** Before any plan, model, massing or render, run `python3 <KIT>/tools/ready_check.py .`. If it reports gaps (brief, program, taste, precedents, concept), **stop and tell the owner**, then offer: (a) the concept-studio skill, (b) filling the gaps together, or (c) recording a deliberate skip. The owner asked to be warned, so never jump straight into geometry.
+- **Protect the concept (CR-KEEP-1).** Once `project.concept.statement` exists, every change must keep it true. If a fix would break it, ask the owner and log the decision.
 - **Ask, don't guess (W-BRIEF-1).** If a dimension, jurisdiction, climate zone, site fact or owner preference is missing, ask, listing exactly what is needed. Never invent a site or code fact.
 - **The spec is the truth (W-SPEC-1).** Every geometry change goes into `design.yaml` first. Plans, IFC and renders are regenerated from it.
 - **Check every change (W-CHECK-1).** Run `python3 <KIT>/tools/check_design.py design.yaml`. An ERROR blocks progress. Resolve each WARN or log it in `DECISIONS.md`.

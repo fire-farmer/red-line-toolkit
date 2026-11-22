@@ -165,6 +165,7 @@ class Checker:
         self.check_roof()
         self.check_circulation(levels)
         self.check_connectivity(levels, by_id)
+        self.check_concept()
         return self.findings
 
     def check_level(self, lv: dict, above, below, ud: bool) -> None:
@@ -494,6 +495,25 @@ class Checker:
         if roof.get("framing") == "rafters" and roof.get("cathedral"):
             self.add("INFO", "S-ROOF-2", "roof",
                      "rafters without ceiling joists or rafter ties need a structural ridge beam, engineered (R802)")
+
+    def check_concept(self) -> None:
+        """CR-GATE-1: from schematic design on, a concept is chosen (with its statement) or skipped on purpose."""
+        project = self.spec.get("project") or {}
+        if project.get("phase", "schematic") in ("programming", "concept"):
+            return
+        c = project.get("concept") or {}
+        status = str(c.get("status", "")).lower()
+        stated = str(c.get("statement") or "").strip()
+        reason = str(c.get("skip_reason") or "").strip()
+        if status == "chosen" and stated and not stated.startswith("<"):
+            self.add("INFO", "CR-KEEP-1", "project.concept",
+                     f"concept: \"{stated[:100]}\" (test the design against it at every gate)")
+        elif status == "skipped" and reason and not reason.startswith("<"):
+            self.add("INFO", "CR-GATE-1", "project.concept", f"concept phase skipped on purpose: {reason[:100]}")
+        else:
+            self.add("WARN", "CR-GATE-1", "project.concept",
+                     "no concept chosen: run the concept phase (playbook 08, concept-studio skill) "
+                     "or record status: skipped with a skip_reason")
 
     def check_connectivity(self, levels: list, by_id: dict) -> None:
         """G-CONN-1: every conditioned room is reachable from an egress door through doors,

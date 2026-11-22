@@ -26,6 +26,16 @@ You are designing or modeling a building. The playbook in this plugin is your fo
 | Units, spec format, LOD, IFC, sheets, layers | `playbook/06-drawing-and-model-standards.md` |
 | Phases, the loop, the professional boundary | `playbook/07-process-and-workflow.md` |
 | Style expression | `playbook/styles/catalog.md` |
+| Creativity, concepts, precedents | `playbook/08-concept-design.md`, `playbook/precedents.md`, skill `concept-studio` |
+
+## 1b. Readiness and the concept (CR-GATE-1): warn before designing
+
+Before you draw any plan, model, massing or render, run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/ready_check.py .` in the project folder. If it reports gaps, **stop and tell the owner what's missing and why it matters**, then offer:
+- (a) the `concept-studio` skill, which fills the gaps with them and then generates concepts;
+- (b) filling the gaps together first;
+- (c) a deliberate skip, recorded in `design.yaml` as `project.concept.status: skipped` with a `skip_reason`.
+
+The owner asked for this warning, so give it even when the request sounds urgent. Once a concept is chosen, every change must keep its statement true (CR-KEEP-1).
 
 ## 2. Ask before modeling (W-BRIEF-1)
 

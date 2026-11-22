@@ -9,6 +9,7 @@ This is the base every house and small structure starts from. It defines what a 
   │ PROJECT      brief · program · design.yaml ·  │  changes every project
   │              decisions · local amendments     │
   ├───────────────────────────────────────────────┤
+  │ CONCEPT      the chosen idea (08)             │  generated per project
   │ STYLE        styles/catalog.md (one module)   │  swapped per project
   ├───────────────────────────────────────────────┤
   │ FOUNDATION   01 principles   02 code          │  stable across projects;
@@ -32,15 +33,17 @@ When two layers disagree, the layer lower in this diagram wins. The one exceptio
 | 05 | [Space planning](05-space-planning.md) | Room-size targets, kitchens, baths, circulation, storage, furniture, doors, accessibility tiers, garages |
 | 06 | [Drawing and model standards](06-drawing-and-model-standards.md) | Units, axes, the spec format, LOD by phase, IFC, sheets, layers, scales, line weights, dimensions, schedules, file naming, model integrity |
 | 07 | [Process and workflow](07-process-and-workflow.md) | The loop Claude runs each iteration, the phases and gates, the professional boundary, which tools to use |
+| 08 | [Concept design](08-concept-design.md) | Creativity: readiness, the surprise dial, banning the obvious, parallel lenses, parametric families, critic, push then pull, protecting the idea |
+| ✦ | [precedents.md](precedents.md) | A starter library of 20 houses, each with the move to take |
 | ✓ | [CHECKLISTS.md](CHECKLISTS.md) | The per-iteration check and the gate checklists |
 | ⚠ | [VERIFY.md](VERIFY.md) | Values not yet confirmed against the primary code text |
 | ◆ | [styles/](styles/) | The style-module system and a catalog of 12 American styles |
 
 ## Using it on a project
 
-1. **Start the project folder** from [`templates/`](../templates/): `PROJECT-BRIEF.md`, `PROGRAM.md`, `design.yaml`, `DECISIONS.md` and `CLAUDE.md`. The `CLAUDE.md` tells every Claude session in that folder to follow this playbook.
+1. **Start the project folder** from [`templates/`](../templates/): `PROJECT-BRIEF.md`, `PROGRAM.md`, `TASTE.md`, `PRECEDENTS.md`, `CONCEPTS.md`, `design.yaml`, `DECISIONS.md` and `CLAUDE.md`. The `CLAUDE.md` tells every Claude session in that folder to follow this playbook.
 2. **Brief.** Fill out the brief with Claude. It asks for what is missing rather than guessing (W-BRIEF-1).
-3. **Program, then schematic design**, in the loop from chapter 07: spec, check, generate, look, record.
+3. **Program, then concept, then schematic design.** Before anything is drawn, Claude checks readiness and warns you if taste, precedents or a concept are missing (CR-GATE-1). The concept studio generates the range ([08](08-concept-design.md)), and the loop in chapter 07 makes the chosen concept correct.
 4. **Gates.** At each phase end, run the matching checklist and get the owner's sign-off.
 5. **Before construction documents**, clear the ⚠️ items the design relies on (W-VERIFY-1) and hand off to the licensed professional (W-PRO-1).
 

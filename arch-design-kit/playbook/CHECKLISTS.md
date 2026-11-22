@@ -26,6 +26,26 @@ These are the gate checklists (W-GATE-1) plus the quick check Claude runs on eve
 - [ ] Storage program (SP-STOR-1); outdoor rooms (P-OUT-1)
 - [ ] Site analysis: sun path, views, access, slope, setbacks, buildable envelope (P-ORIENT-1, Z-SETBACK-1)
 
+## Before designing anything (CR-GATE-1)
+
+Claude raises this automatically (prompt hook + `ready_check.py`). The owner never has to remember it.
+
+- [ ] Brief and program filled (or open questions listed)
+- [ ] `TASTE.md`: the six ★ questions answered, surprise dial set
+- [ ] `PRECEDENTS.md`: 2+ entries, each with the move to take
+- [ ] Concept chosen and recorded, **or** skipped with a reason recorded in `design.yaml`
+
+## Gate 1.5 · Concept chosen
+
+- [ ] Design questions and hard limits written (CR-HARD-1)
+- [ ] The obvious list written; no concept repeats it (CR-OBVIOUS-1)
+- [ ] 8–12 concepts from separate lenses; the spread matrix shows real range (CR-LENS-1, CR-SPREAD-1)
+- [ ] Each concept has a statement, key move, section idea and what it gives up (CR-IDEA-1)
+- [ ] Families explored parametrically where useful (CR-SEARCH-1)
+- [ ] A separate critic scored the board (CR-CRITIC-1); shortlist of 3 shown to the owner
+- [ ] Owner reactions logged in `TASTE.md` in their words (CR-TASTE-1)
+- [ ] Pick pushed further, then recorded in `design.yaml` `project.concept` and in `DECISIONS.md` (CR-PUSH-1, CR-KEEP-1)
+
 ## Gate 2 · Schematic design locked
 
 **Code and geometry**
@@ -51,7 +71,8 @@ These are the gate checklists (W-GATE-1) plus the quick check Claude runs on eve
 - [ ] Kitchen aisles ● and triangle/landings (SP-KIT-1, SP-KIT-2); baths to NKBA targets (SP-BATH-1)
 - [ ] Circulation ≤ ~15% or justified (SP-CIRC-1 ●)
 - [ ] Every room furnished; doors don't collide (SP-FURN-1, SP-DOOR-1)
-- [ ] Foundation principles review (01 checklist) — light, entry, privacy, form
+- [ ] Foundation principles review (01 checklist): light, entry, privacy, form
+- [ ] The concept statement is still true of the plan (CR-KEEP-1)
 
 ## Gate 3 · Design development locked
 

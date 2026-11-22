@@ -64,6 +64,26 @@ Never claim code compliance; say "checked against the playbook baseline". </proc
 ### Program (Gate 1)
 > From the brief, draft PROGRAM.md: the space list with target sizes from playbook 05 (SP-SIZE-1), the adjacency matrix and the zones. Flag any target that pushes us over the budget area, and propose what to cut, citing P-SIMPLE-1.
 
+### Concepts (Gate 1.5): where creativity happens
+
+The full method is [playbook 08](playbook/08-concept-design.md) and the `concept-studio` skill. You don't need to remember it: before any drawing, Claude checks readiness and warns you if taste, precedents or a concept are missing. To start it yourself:
+
+> Run the concept studio. My surprise dial is 4. Ask me the TASTE questions you need first.
+
+Moves that reliably raise creativity, each one built into the studio:
+
+| Move | Prompt it like this |
+|---|---|
+| Ban the obvious (CR-OBVIOUS-1) | "First list the 5 most predictable answers to this brief. None of your concepts may be one of them." |
+| Range, not a design (CR-SPREAD-1) | "Give me 10 concepts that differ in parti, section, relation to the ground, light and what the house is about, not in finishes." |
+| Separate contexts (CR-LENS-1) | "Run each lens as its own parallel subagent; don't let them see each other's ideas." |
+| An idea, not a style (CR-IDEA-1) | "One-sentence concept statement each. No style names, no feature lists." |
+| Specifics (CR-SPECIFIC-1) | "Use the oak, the downhill view, our Sunday breakfast, the Azuma House's court move and a boat cabin as an analogy." |
+| Search a family (CR-SEARCH-1) | "Write a generator for the courtyard family and run explore_variants; show me the 6 most different that pass." |
+| Judge boldness (CR-CRITIC-1) | "Have a separate critic score originality and delight, and say what would make each more surprising." |
+| Push, then pull (CR-PUSH-1) | "Take concept 4 thirty percent further than feels comfortable. Then make it buildable without breaking its statement." |
+| Protect the idea (CR-KEEP-1) | "Before you fix this, does the change keep the concept statement true? If not, ask me." |
+
 ### Schematic options (Gate 2)
 > Create three distinct schematic options as design-a.yaml, design-b.yaml and design-c.yaml: a compact two-story box, a single-level split-bedroom ranch, and an L around a south patio. Each must pass check_design.py with 0 errors. Render each one, then compare them in a table against the brief's top 3 priorities and the 01-foundation checklist. Recommend one.
 
@@ -102,6 +122,9 @@ Never claim code compliance; say "checked against the playbook baseline". </proc
 - **Long sessions**: images are expensive (about 1,600 tokens for a 1280 px image) and the oldest ones drop out of context. Lead with numbers, then show one picture.
 
 ## Anti-patterns
+
+- Jumping straight from the brief to a floor plan. You get the average house. Run the concept phase, or skip it on purpose (CR-GATE-1).
+- Asking for "more creative" in the same conversation. Use fresh parallel contexts with different lenses instead (CR-LENS-1).
 
 - "Design me a beautiful 3-bed house." There's no brief, no units and no site, so you'll get generic geometry built on assumptions.
 - Taking Claude's word for code compliance. Ask for the checker output and the rule IDs.
