@@ -1,5 +1,5 @@
 project:
-  name: "Bar house \xB7 L \xB7 V03"
+  name: "Bar house \xB7 linear \xB7 V03"
   units: in
   phase: concept
   jurisdiction:
@@ -13,7 +13,7 @@ roof:
   form: shed
   pitch: '3:12'
   framing: trusses
-  clear_span_in: 229
+  clear_span_in: 181
 levels:
 - id: L1
   name: Main level
@@ -43,21 +43,21 @@ levels:
     type: bedroom
     rect:
     - 0
-    - 216
-    - 174
-    - 192
+    - 0
+    - 240
+    - 126
     doors:
     - to: HALL
       width_in: 32
     windows:
-    - wall: W
+    - wall: S
       width_in: 30
       height_in: 60
       sill_in: 24
       egress:
         net_clear_w_in: 26
         net_clear_h_in: 54
-    - wall: W
+    - wall: S
       width_in: 30
       height_in: 60
       sill_in: 24
@@ -65,10 +65,10 @@ levels:
     name: Primary Bath
     type: bath
     rect:
+    - 240
     - 0
-    - 408
-    - 174
-    - 96
+    - 120
+    - 126
     doors:
     - to: HALL
       width_in: 32
@@ -83,22 +83,22 @@ levels:
     name: Bedroom 2
     type: bedroom
     rect:
+    - 360
     - 0
-    - 504
-    - 174
-    - 120
+    - 168
+    - 126
     doors:
     - to: HALL
       width_in: 32
     windows:
-    - wall: W
+    - wall: S
       width_in: 30
       height_in: 60
       sill_in: 24
       egress:
         net_clear_w_in: 26
         net_clear_h_in: 54
-    - wall: W
+    - wall: S
       width_in: 30
       height_in: 60
       sill_in: 24
@@ -106,10 +106,10 @@ levels:
     name: Bath 2
     type: bath
     rect:
+    - 528
     - 0
-    - 624
-    - 174
-    - 72
+    - 96
+    - 126
     doors:
     - to: HALL
       width_in: 32
@@ -124,22 +124,22 @@ levels:
     name: Bedroom 3
     type: bedroom
     rect:
+    - 624
     - 0
-    - 696
-    - 174
-    - 120
+    - 168
+    - 126
     doors:
     - to: HALL
       width_in: 32
     windows:
-    - wall: W
+    - wall: S
       width_in: 30
       height_in: 60
       sill_in: 24
       egress:
         net_clear_w_in: 26
         net_clear_h_in: 54
-    - wall: W
+    - wall: S
       width_in: 30
       height_in: 60
       sill_in: 24
@@ -147,30 +147,30 @@ levels:
     name: Gallery
     type: hall
     rect:
-    - 174
-    - 216
+    - 0
+    - 126
+    - 792
     - 42
-    - 600
     open_to:
     - ENTRY
   - id: ENTRY
     name: Entry
     type: foyer
     rect:
+    - 792
     - 0
-    - 0
-    - 216
-    - 216
+    - 96
+    - 168
     open_to:
     - GREAT
   - id: GREAT
     name: Great Room
     type: living
     rect:
-    - 216
+    - 888
     - 0
-    - 264
-    - 216
+    - 336
+    - 168
     open_to:
     - KITCHEN
     windows:
@@ -186,10 +186,10 @@ levels:
     name: Kitchen
     type: kitchen
     rect:
-    - 480
+    - 1224
     - 0
-    - 144
-    - 216
+    - 192
+    - 168
     kitchen:
       work_aisle_in: 48
       cooks: 2
@@ -202,9 +202,23 @@ levels:
     name: Laundry / Mud
     type: laundry
     rect:
-    - 624
+    - 1416
     - 0
     - 60
-    - 216
+    - 168
     open_to:
     - KITCHEN
+  - id: GARAGE
+    name: Garage
+    type: garage
+    rect:
+    - 1476
+    - 0
+    - 264
+    - 264
+    opens_to:
+    - LAUNDRY
+  garage_separation:
+    wall: 1/2 in. gypsum, garage side
+    ceiling: 1/2 in. gypsum
+    door: 1-3/8 in. solid core, self-closing

@@ -34,7 +34,7 @@ When two layers disagree, the layer lower in this diagram wins. The one exceptio
 | 06 | [Drawing and model standards](06-drawing-and-model-standards.md) | Units, axes, the spec format, LOD by phase, IFC, sheets, layers, scales, line weights, dimensions, schedules, file naming, model integrity |
 | 07 | [Process and workflow](07-process-and-workflow.md) | The loop Claude runs each iteration, the phases and gates, the professional boundary, which tools to use |
 | 08 | [Concept design](08-concept-design.md) | Creativity: readiness, the surprise dial, banning the obvious, parallel lenses, parametric families, critic, push then pull, protecting the idea |
-| ✦ | [precedents.md](precedents.md) | A starter library of 20 houses, each with the move to take |
+| ✦ | [precedents.md](precedents.md) · [provocations.md](provocations.md) | Precedents (canonical and vernacular), each with the move to take · the deck of analogies and provocations |
 | ✓ | [CHECKLISTS.md](CHECKLISTS.md) | The per-iteration check and the gate checklists |
 | ⚠ | [VERIFY.md](VERIFY.md) | Values not yet confirmed against the primary code text |
 | ◆ | [styles/](styles/) | The style-module system and a catalog of 12 American styles |

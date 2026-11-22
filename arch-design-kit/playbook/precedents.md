@@ -1,6 +1,6 @@
 # Starter precedent library
 
-These are houses worth learning from. Each entry names **the move to take**, the transferable idea, and the lens it serves (CR-LENS-1). They are well-documented works, so look them up for photos and plans. Copy the useful ones into a project's `PRECEDENTS.md` with *your* reason, and add your own. Take the move, never the building (P-STYLE-1).
+These are houses worth learning from, canonical and vernacular. Each entry names **the move to take**, the transferable idea, and the lens it serves (CR-LENS-1). `tools/deal.py` deals from these tables, so add rows in the same format. They are well-documented works, so look them up for photos and plans. Copy the useful ones into a project's `PRECEDENTS.md` with *your* reason, and add your own. Take the move, never the building (P-STYLE-1).
 
 | House (architect, place) | The move to take | Lenses |
 |---|---|---|
@@ -24,6 +24,25 @@ These are houses worth learning from. Each entry names **the move to take**, the
 | **House NA** (Sou Fujimoto, Tokyo) | A tree of small floor plates at different heights, with no rooms in the usual sense. Section as the idea. | contrarian, ritual |
 | **Lunuganga** (Geoffrey Bawa, Sri Lanka) | Building and garden made over decades as one composition of framed views and verandas. | site, climate |
 | **Esherick House** (Louis Kahn, Philadelphia) | Thick "servant" walls of bookshelves, closets and windows serving open "served" rooms. A deep window wall as furniture. | light, material |
+
+## Vernacular and modest houses
+
+Ordinary building types carry ideas just as strong, and they fit wood-frame budgets.
+
+| House type (place) | The move to take | Lenses |
+|---|---|---|
+| **Dogtrot house** (US South) | Two cabins under one roof with an open breezeway between them: a shaded outdoor room that pulls air through the house. | climate, ritual |
+| **Shotgun house** (New Orleans) | Rooms in a line, one behind the next, on a narrow lot. Privacy grows with depth, and a deep front porch is the social room. | constraint, ritual |
+| **Charleston single house** (South Carolina) | The narrow end faces the street, and long side piazzas (porches) face the prevailing breeze. The entry is through the porch. | climate, site |
+| **Saltbox** (New England) | An asymmetric roof, long and low to the north against winter wind, tall to the south for light. | climate |
+| **Machiya** (Kyoto) | A deep, narrow townhouse with small courtyard gardens punched through it, so light and air reach every room. | constraint, light |
+| **Riad** (Morocco) | Blank walls to the street, everything opening to a planted courtyard with water at its center. | ritual, climate |
+| **Longhouse** (many cultures) | One long shared hall under one roof, with zones along its length instead of rooms. | ritual, structure |
+| **Queenslander** (Australia) | Raised on stumps, with verandas wrapping the house, lattice screens, and high ceilings that vent heat. | climate, site |
+| **Usonian house** (Frank Lloyd Wright, US) | Modest and affordable: a slab floor with radiant heat, a carport, a central workspace kitchen, and an L around a garden. | constraint, ritual |
+| **Case Study houses** (Los Angeles, mid-century) | Off-the-shelf steel and plywood, open to the garden. Show how cheap industrial parts can make a generous house. | structure, constraint |
+| **Rural Studio 20K House** (Alabama) | A small house designed down to a tight construction budget. Constraint as the design brief, with a generous porch as the payoff. | constraint, material |
+| **Moriyama House** (Ryue Nishizawa, Tokyo) | One home split into small separate boxes scattered across a lot, with gardens between them. | contrarian, ritual |
 
 ## How to use a precedent in a prompt
 

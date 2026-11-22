@@ -43,7 +43,7 @@
 - Accessibility tier (SP-UD-3): standard / visitable / aging in place
 
 ## 6. Design direction
-- Style module (playbook/styles/catalog.md), or "explore 2–3":
+- Style leanings, if any (a style module is chosen after the concept, to serve it; lenses don't see this):
 - Reference images (describe them in words, plus why they appeal):
 - Materials the owner likes or wants to avoid:
 - Energy ambition: code / ENERGY STAR / Zero Energy Ready / Passive House:

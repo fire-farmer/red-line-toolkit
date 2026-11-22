@@ -1,5 +1,5 @@
 project:
-  name: "Bar house \xB7 L \xB7 V06"
+  name: "Bar house \xB7 U \xB7 V06"
   units: in
   phase: concept
   jurisdiction:
@@ -13,7 +13,7 @@ roof:
   form: shed
   pitch: '3:12'
   framing: trusses
-  clear_span_in: 181
+  clear_span_in: 229
 levels:
 - id: L1
   name: Main level
@@ -43,7 +43,7 @@ levels:
     type: bedroom
     rect:
     - 0
-    - 168
+    - 216
     - 126
     - 168
     doors:
@@ -66,7 +66,7 @@ levels:
     type: bath
     rect:
     - 0
-    - 336
+    - 384
     - 126
     - 96
     doors:
@@ -84,7 +84,7 @@ levels:
     type: bedroom
     rect:
     - 0
-    - 432
+    - 480
     - 126
     - 168
     doors:
@@ -107,7 +107,7 @@ levels:
     type: bath
     rect:
     - 0
-    - 600
+    - 648
     - 126
     - 120
     doors:
@@ -125,7 +125,7 @@ levels:
     type: bedroom
     rect:
     - 0
-    - 720
+    - 768
     - 126
     - 240
     doors:
@@ -148,7 +148,7 @@ levels:
     type: hall
     rect:
     - 126
-    - 168
+    - 216
     - 42
     - 792
     open_to:
@@ -160,7 +160,7 @@ levels:
     - 0
     - 0
     - 168
-    - 168
+    - 216
     open_to:
     - GREAT
   - id: GREAT
@@ -169,8 +169,8 @@ levels:
     rect:
     - 168
     - 0
-    - 336
-    - 168
+    - 264
+    - 216
     open_to:
     - KITCHEN
     windows:
@@ -186,15 +186,15 @@ levels:
     name: Kitchen
     type: kitchen
     rect:
-    - 504
+    - 432
     - 0
-    - 192
-    - 168
+    - 144
+    - 216
     kitchen:
       work_aisle_in: 48
       cooks: 2
     windows:
-    - wall: N
+    - wall: E
       width_in: 60
       height_in: 42
       sill_in: 42
@@ -202,9 +202,23 @@ levels:
     name: Laundry / Mud
     type: laundry
     rect:
-    - 696
-    - 0
-    - 60
-    - 168
+    - 432
+    - 216
+    - 144
+    - 72
     open_to:
     - KITCHEN
+  - id: GARAGE
+    name: Garage
+    type: garage
+    rect:
+    - 432
+    - 288
+    - 264
+    - 264
+    opens_to:
+    - LAUNDRY
+  garage_separation:
+    wall: 1/2 in. gypsum, garage side
+    ceiling: 1/2 in. gypsum
+    door: 1-3/8 in. solid core, self-closing

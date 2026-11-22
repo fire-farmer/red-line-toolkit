@@ -14,7 +14,9 @@ These are the conventions that make Claude's output readable by builders, consul
 The spec is the project's **single source of truth** (W-SPEC-1). Plans, IFC models and renders are generated from it and never edited by hand. The format, in brief (see `templates/design.yaml` for the annotated version):
 
 ```yaml
-project:   {name, units, phase, jurisdiction: {code, energy_code, ahj, climate_zone}, style, ...}
+project:   {name, units, phase (brief|programming|concept|schematic|design-development|construction-documents),
+           area_budget_sqft, jurisdiction: {code, energy_code, ahj, climate_zone}, style,
+           concept: {status, id, statement, key_move, gives_up, invariants, moments, skip_reason}, ...}
 site:      {lot_in, setbacks_in: {north, south, east, west}, building_origin_in}
 roof:      {form, pitch, framing, clear_span_in, overhang_in}
 limits:    {<limit_key>: {value, reason}}        # local amendments only

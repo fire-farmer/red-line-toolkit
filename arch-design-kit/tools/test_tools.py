@@ -307,11 +307,14 @@ class Outputs(unittest.TestCase):
 
 
 class CreativeLayer(unittest.TestCase):
-    """Playbook 08: the readiness gate, the hook and the variant explorer."""
+    """Playbook 08: the readiness gate and hook, concept mode, invariants and the concept tools.
+    Several tests pin defects found by the Fable audit so they can't quietly return."""
 
-    def fresh_project(self, tmp: str) -> Path:
+    STATEMENT = "Every room opens onto one long garden wall that holds the family's books."
+
+    def fresh_project(self, tmp: str, name: str = "proj") -> Path:
         import shutil
-        proj = Path(tmp) / "proj"
+        proj = Path(tmp) / name
         shutil.copytree(HERE.parent / "templates", proj)
         return proj
 
@@ -325,19 +328,34 @@ class CreativeLayer(unittest.TestCase):
             "\n".join(f"| R{i} | Room {i} | bedroom | 11×12 | 132 | x | bed | |" for i in range(6)))
         (proj / "PROGRAM.md").write_text(program)
         taste = (proj / "TASTE.md").read_text()
-        starred = [l for l in taste.splitlines() if l.startswith("- ★")][:5]
-        for line in starred:
+        for line in [l for l in taste.splitlines() if l.startswith("- ★")][:5]:
             taste = taste.replace(line, line + (" 4" if "dial" in line else " because I love light"), 1)
         (proj / "TASTE.md").write_text(taste)
         (proj / "PRECEDENTS.md").write_text((proj / "PRECEDENTS.md").read_text()
                                             + "\n### Magney House\n- Move to take: roof\n### Azuma House\n- Move to take: court\n")
 
+    def choose(self, proj: Path, statement: str) -> None:
+        spec = (proj / "design.yaml").read_text().replace("    status: exploring", "    status: chosen").replace(
+            "    statement:                    #", f'    statement: "{statement}"  #')
+        (proj / "design.yaml").write_text(spec)
+
+    def hook(self, prompt: str, cwd: Path, session: str):
+        import json
+        import subprocess
+        import os
+        event = json.dumps({"prompt": prompt, "cwd": str(cwd), "session_id": session})
+        return subprocess.run([sys.executable, str(HERE / "ready_check.py"), "--hook"], input=event,
+                              capture_output=True, text=True, timeout=30,
+                              env=dict(os.environ, TMPDIR=str(cwd.parent)))     # markers stay in the test's tmp
+
+    # -- readiness -----------------------------------------------------------------------
     def test_blank_project_is_not_ready(self):
         import ready_check
         with tempfile.TemporaryDirectory() as tmp:
             result = ready_check.check(self.fresh_project(tmp))
             self.assertFalse(result["ready"])
             self.assertEqual(set(result["missing"]), {"brief", "program", "taste", "precedents", "concept"})
+            self.assertEqual(result["phase"], "brief")
 
     def test_filled_project_with_concept_is_ready(self):
         import ready_check
@@ -345,66 +363,210 @@ class CreativeLayer(unittest.TestCase):
             proj = self.fresh_project(tmp)
             self.fill(proj)
             self.assertEqual(ready_check.check(proj)["missing"], ["concept"])
-            spec = (proj / "design.yaml").read_text().replace(
-                "    status: exploring", "    status: chosen").replace(
-                "    statement:                    #", '    statement: "A house that is one long wall."  #')
-            (proj / "design.yaml").write_text(spec)
+            self.choose(proj, self.STATEMENT)
             self.assertTrue(ready_check.check(proj)["ready"], ready_check.check(proj)["items"])
 
-    def test_deliberate_skip_counts_as_decided(self):
+    def test_taste_needs_the_dial(self):
+        import ready_check
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = self.fresh_project(tmp)
+            taste = (proj / "TASTE.md").read_text()
+            for line in [l for l in taste.splitlines() if l.startswith("- ★") and "dial" not in l]:
+                taste = taste.replace(line, line + " a real answer", 1)
+            (proj / "TASTE.md").write_text(taste)
+            self.assertIn("taste", ready_check.check(proj)["missing"])          # five answers, no dial
+            (proj / "TASTE.md").write_text(taste.replace("5 provoke me):", "5 provoke me): 3"))
+            self.assertNotIn("taste", ready_check.check(proj)["missing"])
+
+    def test_tbd_answers_do_not_count(self):
+        import ready_check
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = self.fresh_project(tmp)
+            brief = (proj / "PROJECT-BRIEF.md").read_text().replace("<project name>", "X")
+            for line in [l for l in brief.splitlines() if l.rstrip().endswith(":") and l.startswith("- ")]:
+                brief = brief.replace(line, line + " TBD", 1)
+            (proj / "PROJECT-BRIEF.md").write_text(brief)
+            self.assertIn("brief", ready_check.check(proj)["missing"])
+
+    def test_taste_profile_one_folder_up_counts(self):
         import ready_check
         with tempfile.TemporaryDirectory() as tmp:
             proj = self.fresh_project(tmp)
             self.fill(proj)
-            spec = (proj / "design.yaml").read_text().replace("    status: exploring", "    status: skipped").replace(
-                '    # skip_reason: "owner wants a straightforward builder-style plan"',
-                '    skip_reason: "owner wants a builder plan"')
-            (proj / "design.yaml").write_text(spec)
-            self.assertTrue(ready_check.check(proj)["concept_decided"])
+            (Path(tmp) / "TASTE-PROFILE.md").write_text((proj / "TASTE.md").read_text())
+            (proj / "TASTE.md").unlink()
+            self.assertNotIn("taste", ready_check.check(proj)["missing"])
 
-    def test_hook_warns_once_and_only_for_design_prompts(self):
-        import json
-        import subprocess
+    def test_concept_statement_must_be_an_idea(self):
+        from check_design import concept_status
+        self.assertEqual(concept_status({"status": "chosen"})[0], "undecided")                 # empty
+        self.assertEqual(concept_status({"status": "chosen", "statement": None})[0], "undecided")
+        self.assertEqual(concept_status({"status": "chosen", "statement": "Modern farmhouse with a big porch"})[0],
+                         "undecided")                                                         # style + feature
+        self.assertEqual(concept_status({"status": "chosen", "statement": self.STATEMENT})[0], "chosen")
+        self.assertEqual(concept_status({"status": "skipped", "skip_reason": "x"})[0], "undecided")
+        self.assertEqual(concept_status({"status": "skipped", "skip_reason": "owner wants a builder plan"})[0], "skipped")
+
+    def test_fallback_parser_without_pyyaml(self):
+        import ready_check
+        block = 'project:\n  name: X\n  phase: schematic   # note\n  concept:   # playbook 08\n' \
+                f'    status: chosen  # yes\n    statement: "{self.STATEMENT}"\n  units: in\nsite: {{}}\n'
+        inline = f'project:\n  phase: schematic\n  concept: {{status: chosen, statement: "{self.STATEMENT}", id: C-01}}\n'
+        saved = sys.modules.get("yaml")
+        sys.modules["yaml"] = None                                       # simulate macOS python3 without PyYAML
+        try:
+            for text in (block, inline):
+                project = ready_check.read_project(text)
+                self.assertEqual(project["phase"], "schematic")
+                self.assertEqual(ready_check.concept_status(project["concept"])[0], "chosen", project)
+        finally:
+            if saved is None:
+                del sys.modules["yaml"]
+            else:
+                sys.modules["yaml"] = saved
+
+    # -- the hook --------------------------------------------------------------------------
+    def test_hook_warns_once_per_session_even_as_gaps_close(self):
         with tempfile.TemporaryDirectory() as tmp:
             proj = self.fresh_project(tmp)
-
-            def run(prompt, session):
-                event = json.dumps({"prompt": prompt, "cwd": str(proj), "session_id": session})
-                return subprocess.run([sys.executable, str(HERE / "ready_check.py"), "--hook"], input=event,
-                                      capture_output=True, text=True, timeout=30)
-            first = run("lay out the floor plan", f"s-{tmp}")
+            first = self.hook("lay out the floor plan", proj, f"s-{tmp}")
             self.assertEqual(first.returncode, 0)
             self.assertIn("CR-GATE-1", first.stdout)
-            self.assertEqual(run("lay out the floor plan", f"s-{tmp}").stdout, "")   # once per session
-            self.assertEqual(run("what time is it?", f"t-{tmp}").stdout, "")           # not a design prompt
-            bad = subprocess.run([sys.executable, str(HERE / "ready_check.py"), "--hook"], input="not json",
-                                 capture_output=True, text=True, timeout=30)
-            self.assertEqual((bad.returncode, bad.stdout), (0, ""))                     # never breaks a session
+            self.assertLess(len(first.stdout.splitlines()), 4)                  # brief, not a wall of text
+            self.fill(proj)                                                    # gaps change...
+            self.assertEqual(self.hook("let's start designing", proj, f"s-{tmp}").stdout, "")   # ...still once
+            self.assertEqual(self.hook("what time is it?", proj, f"t-{tmp}").stdout, "")
+
+    def test_hook_quiet_while_the_studio_runs_or_when_named(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = self.fresh_project(tmp)
+            self.assertEqual(self.hook("run the concept studio for this house", proj, f"a-{tmp}").stdout, "")
+            (proj / "design.yaml").write_text((proj / "design.yaml").read_text().replace("phase: brief", "phase: concept"))
+            self.assertEqual(self.hook("sketch the court option", proj, f"b-{tmp}").stdout, "")
+
+    def test_hook_speaks_in_an_empty_folder_and_finds_a_project_below(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            empty = Path(tmp) / "empty"
+            empty.mkdir()
+            self.assertIn("No design project", self.hook("design me a 3 bedroom house", empty, f"c-{tmp}").stdout)
+            parent = Path(tmp) / "parent"
+            parent.mkdir()
+            self.fresh_project(str(parent), "oak-hill")
+            self.assertIn("CR-GATE-1", self.hook("draw the plan", parent, f"d-{tmp}").stdout)
+
+    def test_hook_never_breaks_a_session(self):
+        import subprocess
+        bad = subprocess.run([sys.executable, str(HERE / "ready_check.py"), "--hook"], input="not json",
+                             capture_output=True, text=True, timeout=30)
+        self.assertEqual((bad.returncode, bad.stdout), (0, ""))
+
+    def test_design_intent_matcher(self):
+        from ready_check import design_intent
+        for prompt in ("let's start designing", "start modeling", "make three layouts", "give me concepts",
+                       "show me some options", "build me a 3-bed", "draw a section through the stair"):
+            self.assertTrue(design_intent(prompt), prompt)
+        for prompt in ("what's the plan for today?", "which model are you?", "commit the files and go home",
+                       "read section 3 of the brief", "interview me for the brief for our house"):
+            self.assertFalse(design_intent(prompt), prompt)
 
     def test_hook_file_points_at_the_script(self):
         import json
         hooks = json.loads((HERE.parent / "hooks" / "hooks.json").read_text())
-        command = hooks["hooks"]["UserPromptSubmit"][0]["hooks"][0]["command"]
-        self.assertIn("tools/ready_check.py", command)
-        self.assertTrue((HERE / "ready_check.py").exists())
+        self.assertIn("tools/ready_check.py", hooks["hooks"]["UserPromptSubmit"][0]["hooks"][0]["command"])
 
-    def test_checker_warns_without_a_concept(self):
+    # -- checker: concept gate, concept mode, invariants -------------------------------------
+    def test_checker_concept_gate(self):
         spec = load(str(HERE.parent / "templates" / "design.yaml"))
+        spec["project"]["phase"] = "schematic"
         self.assertIn("CR-GATE-1", rules(spec, "WARN"))
+        spec["project"]["concept"] = {"status": "chosen", "statement": "Modern farmhouse with a porch"}
+        self.assertIn("CR-GATE-1", rules(spec, "WARN"))                       # a style is not an idea
         self.assertNotIn("CR-GATE-1", rules(load(str(EXAMPLE)), "WARN"))
 
-    def test_explorer_keeps_different_partis_that_pass(self):
+    def test_invariants(self):
+        spec = load(str(EXAMPLE))
+        self.assertNotIn("CR-KEEP-1", rules(spec, "WARN"))                    # the example's invariants hold
+        spec["project"]["concept"]["invariants"].append({"all_rooms_touch": "GREAT"})
+        spec["project"]["concept"]["invariants"].append({"room": "GREAT", "min_length_in": 400})
+        warns = [f.message for f in Checker(spec).run() if f.rule == "CR-KEEP-1" and f.severity == "WARN"]
+        self.assertEqual(len(warns), 2, warns)
+
+    def test_concept_mode_hard_limits_only(self):
+        rooms = [{"id": "BR1", "type": "bedroom", "rect": [0, 0, 120, 120]},
+                 {"id": "LIV", "type": "living", "rect": [120, 0, 240, 120]}]
+        sketch = {"project": {"units": "in", "phase": "concept", "area_budget_sqft": 300},
+                  "levels": [{"id": "L1", "rooms": rooms}]}
+        self.assertEqual(rules(sketch, "ERROR"), set())                       # no doors, alarms, windows needed
+        self.assertTrue(rules(sketch, "ERROR") != rules(dict(sketch, project=dict(sketch["project"], phase="schematic")),
+                                                         "ERROR"))
+        sketch["project"]["area_budget_sqft"] = 600
+        self.assertIn("CR-HARD-1", rules(sketch, "ERROR"))                     # 300 sq ft vs 600 ± 15%
+        sketch["project"]["area_budget_sqft"] = 300
+        buried = [{"id": "BR1", "type": "bedroom", "rect": [120, 120, 120, 120]}] + [
+            {"id": f"R{i}", "type": "living", "rect": r} for i, r in enumerate(
+                [[0, 0, 360, 120], [0, 240, 360, 120], [0, 120, 120, 120], [240, 120, 120, 120]])]
+        sketch["levels"][0]["rooms"] = buried
+        sketch["project"]["area_budget_sqft"] = 1300
+        self.assertIn("CR-HARD-1", rules(sketch, "ERROR"))                     # bedroom with no outside wall
+
+    # -- concept tools ---------------------------------------------------------------------
+    def test_explorer_concept_mode_drops_and_keeps_range(self):
         import explore_variants
         with tempfile.TemporaryDirectory() as tmp:
-            gen = HERE.parent / "examples" / "bar-house" / "variants.py"
-            self.assertEqual(explore_variants.main([str(gen), "--n", "200", "--keep", "6", "--out", tmp]), 0)
+            gen = HERE.parent / "examples" / "court-house" / "variants.py"
+            self.assertEqual(explore_variants.main([str(gen), "--keep", "6", "--out", tmp]), 0)
+            summary = (Path(tmp) / "summary.md").read_text()
+            self.assertRegex(summary, r"\d+ tried · \d+ passed \(concept mode\) · [1-9]\d* dropped")   # drop path runs
             kept = sorted(Path(tmp).glob("V*.yaml"))
             self.assertEqual(len(kept), 6)
-            partis = {load(str(p))["project"]["name"].split("·")[1].strip() for p in kept}
-            self.assertEqual(partis, {"linear", "L", "U"})        # range, not six copies of one idea
             for p in kept:
                 self.assertEqual(rules(load(str(p)), "ERROR"), set())
-            self.assertTrue((Path(tmp) / "index.html").exists())
+
+    def test_explorer_merges_mirror_images(self):
+        import explore_variants
+        gen = explore_variants.load_generator(HERE.parent / "examples" / "bar-house" / "variants.py")
+        variants = [{"params": c, "features": explore_variants.features(gen.generate(dict(c)))}
+                    for c in explore_variants.combos(gen.PARAMS, 500, 1)]
+        unique = explore_variants.dedupe(variants)
+        self.assertEqual(len(unique), len(variants) // 2)                    # primary far/near is a mirror
+        self.assertEqual(len({u["params"]["parti"] for u in explore_variants.select(unique, 6, ["parti"])}), 3)
+
+    def test_deal_gives_each_lens_its_own_cards(self):
+        import deal
+        with tempfile.TemporaryDirectory() as tmp:
+            proj = self.fresh_project(tmp)
+            self.fill(proj)
+            hands = deal.deal(proj, 1, deal.LENSES)
+            cards = [c[1] for hand in hands.values() for c in hand if c[0] in ("analogy", "provocation", "new precedent")]
+            self.assertEqual(len(cards), len(set(cards)))                     # nothing repeats across lenses
+            self.assertEqual(hands, deal.deal(proj, 1, deal.LENSES))           # same round, same hand
+            self.assertNotEqual(hands, deal.deal(proj, 2, deal.LENSES))        # new round, new hand
+
+    def test_sun_numbers(self):
+        import sun
+        self.assertAlmostEqual(sun.noon_altitude(37.8, sun.TILT), 75.64, places=1)
+        self.assertAlmostEqual(sun.noon_altitude(37.8, -sun.TILT), 28.76, places=1)
+        self.assertAlmostEqual(sun.rise_bearing(37.8, sun.TILT), 59.8, places=0)
+
+    def test_concept_board_and_blind_jury(self):
+        import json
+        import concept_board
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "concepts"
+            folder.mkdir()
+            (folder / "C-01.yaml").write_text(f"id: C-01\nlens: site\nkind: wild\nstatement: \"{self.STATEMENT}\"\n")
+            (folder / "C-02.yaml").write_text("id: C-02\nlens: ritual\nkind: grounded\nstatement: Modern farmhouse with a porch\n")
+            (folder / "obvious.yaml").write_text("- a center-hall colonial\n- a split-bedroom ranch\n")
+            self.assertEqual(concept_board.main([tmp]), 0)
+            page = (folder / "index.html").read_text()
+            self.assertIn("garden wall", page)
+            self.assertIn("Obvious 1", page)
+            self.assertEqual(page.count('class="flag"'), 1)                   # the style statement is flagged
+            self.assertEqual(concept_board.main([tmp, "--jury"]), 0)
+            pack = (folder / "jury.md").read_text()
+            self.assertNotIn("wild", pack)                                     # blind: no lens, kind or round
+            key = json.loads((folder / "jury-key.json").read_text())
+            self.assertEqual(sorted(key.values()), ["C-01", "C-02", "OBVIOUS-1", "OBVIOUS-2"])
 
 
 class FreeCADLoader(unittest.TestCase):

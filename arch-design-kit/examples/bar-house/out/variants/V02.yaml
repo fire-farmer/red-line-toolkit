@@ -38,11 +38,52 @@ levels:
   - type: combo
     room: GREAT
   rooms:
-  - id: BR3
-    name: Bedroom 3
+  - id: BRP
+    name: Primary Bedroom
     type: bedroom
     rect:
     - 0
+    - 0
+    - 240
+    - 126
+    doors:
+    - to: HALL
+      width_in: 32
+    windows:
+    - wall: S
+      width_in: 30
+      height_in: 60
+      sill_in: 24
+      egress:
+        net_clear_w_in: 26
+        net_clear_h_in: 54
+    - wall: S
+      width_in: 30
+      height_in: 60
+      sill_in: 24
+  - id: BATHP
+    name: Primary Bath
+    type: bath
+    rect:
+    - 240
+    - 0
+    - 120
+    - 126
+    doors:
+    - to: HALL
+      width_in: 32
+    fixtures:
+      wc:
+        side_clear_in: 18
+        front_clear_in: 30
+      shower:
+        w_in: 36
+        d_in: 48
+  - id: BR2
+    name: Bedroom 2
+    type: bedroom
+    rect:
+    - 360
     - 0
     - 168
     - 126
@@ -65,7 +106,7 @@ levels:
     name: Bath 2
     type: bath
     rect:
-    - 168
+    - 528
     - 0
     - 96
     - 126
@@ -79,54 +120,13 @@ levels:
       shower:
         w_in: 36
         d_in: 48
-  - id: BR2
-    name: Bedroom 2
+  - id: BR3
+    name: Bedroom 3
     type: bedroom
     rect:
-    - 264
+    - 624
     - 0
     - 168
-    - 126
-    doors:
-    - to: HALL
-      width_in: 32
-    windows:
-    - wall: S
-      width_in: 30
-      height_in: 60
-      sill_in: 24
-      egress:
-        net_clear_w_in: 26
-        net_clear_h_in: 54
-    - wall: S
-      width_in: 30
-      height_in: 60
-      sill_in: 24
-  - id: BATHP
-    name: Primary Bath
-    type: bath
-    rect:
-    - 432
-    - 0
-    - 120
-    - 126
-    doors:
-    - to: HALL
-      width_in: 32
-    fixtures:
-      wc:
-        side_clear_in: 18
-        front_clear_in: 30
-      shower:
-        w_in: 36
-        d_in: 48
-  - id: BRP
-    name: Primary Bedroom
-    type: bedroom
-    rect:
-    - 552
-    - 0
-    - 240
     - 126
     doors:
     - to: HALL

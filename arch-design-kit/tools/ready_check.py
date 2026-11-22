@@ -4,18 +4,21 @@
     python3 ready_check.py [project_dir]     # human report; exit 0 = ready, 1 = not yet
     python3 ready_check.py --hook            # Claude Code UserPromptSubmit hook: JSON on stdin
 
-Before plans or models are drawn, it checks the project folder for the groundwork that
-creative design needs:
-  brief (PROJECT-BRIEF.md) · program (PROGRAM.md) · taste (TASTE.md) ·
-  precedents (PRECEDENTS.md) · a concept chosen, or skipped on purpose (design.yaml project.concept)
+Before plans or models are drawn, it checks a project folder for the groundwork creative design
+needs: brief (PROJECT-BRIEF.md) · program (PROGRAM.md) · taste (TASTE.md, or the owner's
+TASTE-PROFILE.md one folder up) · precedents (PRECEDENTS.md) · and a concept chosen in
+design.yaml (project.concept), or skipped on purpose.
 
-In hook mode it stays silent unless the prompt asks for design work in a project folder that
-isn't ready. Then it tells Claude to warn the owner and offer the concept studio before
-drawing anything. It never blocks a prompt and never fails loudly (a hook must not break the
-session). It prints its reminder at most once per session for the same set of gaps.
+Hook mode is the "warn me before we jump into designing" the owner asked for. It speaks only when
+the prompt asks for design work:
+  * in a folder with no project (it offers to set one up), or with exactly one project one level down;
+  * in a project that isn't ready, at most once per session and project (the marker expires after
+    6 hours), and never while the concept studio is running or when the prompt itself names the
+    studio or a skip.
+It never blocks a prompt and never fails loudly (a hook must not break the session).
 
-Uses only the standard library and runs on Python 3.8+ (macOS's built-in python3 included).
-PyYAML is used for design.yaml when installed, with a small fallback parser otherwise.
+Standard library only (Python 3.8+, so macOS's built-in python3 works). PyYAML is used for
+design.yaml when installed; a small fallback parser handles the block and inline forms otherwise.
 """
 from __future__ import annotations
 
@@ -25,15 +28,27 @@ import os
 import re
 import sys
 import tempfile
+import time
 from pathlib import Path
 
-ANSWERED = re.compile(r"^\s*-\s+[^:\n]{2,}:[ \t]*\S", re.M)   # "- Label: answer"
-STARRED = re.compile(r"^\s*-\s+★[^:\n]*:[ \t]*\S", re.M)       # "- ★ Label: answer"
-DESIGN_INTENT = re.compile(
-    r"\b(design|redesign|lay ?out|floor ?plans?|plans?|model|massing|schematic|concept|sketch|draw|"
-    r"render|elevations?|sections?|house|home|cabin|adu|addition|rooms?|kitchen|bedrooms?|freecad|ifc)\b",
-    re.I)
-THRESHOLDS = {"brief_answers": 8, "program_rows": 6, "taste_starred": 4, "taste_answers": 6, "precedents": 2}
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_design import concept_status, PRE_SCHEMATIC  # noqa: E402  (stdlib-only import)
+
+TEMPLATES = Path(__file__).resolve().parent.parent / "templates"
+PROJECT_FILES = ("design.yaml", "PROJECT-BRIEF.md")
+MARKER_TTL_S = 6 * 3600
+
+# Design intent: strong words alone, or a making-verb near a design noun (same sentence).
+STRONG = re.compile(
+    r"\b(design(?:ing|ed|s)?|redesign\w*|sketch(?:es|ing)?|draw(?:ing|s|n)?|model(?:l)?ing|"
+    r"lay(?:ing)? ?outs?|floor ?plans?|massing|concepts?|renders?|rendering|elevations?|schematics?|parti)\b"
+    r"|\b\d\s*-?\s*bed(?:room)?s?\b", re.I)
+VERB = re.compile(r"\b(make|create|build|draw|generate|give me|start|show me|produce|come up with|"
+                  r"mock up|let'?s do|try)\b", re.I)
+NOUN = re.compile(r"\b(plans?|house|home|cabin|adu|addition|model|sections?|rooms?|kitchen|bedrooms?|garage|"
+                  r"layouts?|options|versions?|variants?|scheme)\b", re.I)
+EXEMPT = re.compile(r"concept[- ]?studio|skip(?:ping)? (?:the )?concept|status:\s*skipped|\bTASTE\.md\b", re.I)
+EMPTY_ANSWER = re.compile(r"^(?:tbd|todo|\?+|\.{2,}|…|-+|<.*>)$", re.I)
 
 
 def _read(path: Path) -> str:
@@ -43,14 +58,35 @@ def _read(path: Path) -> str:
         return ""
 
 
-TEMPLATES = Path(__file__).resolve().parent.parent / "templates"
+def design_intent(prompt: str) -> bool:
+    if STRONG.search(prompt):
+        return True
+    return any(VERB.search(s) and NOUN.search(s) for s in re.split(r"[.!?\n]", prompt))
 
 
-def _new_lines(text: str, template_name: str, pattern: "re.Pattern") -> list:
-    """Lines matching pattern that the blank template doesn't already contain (options, examples)."""
+# ------------------------------------------------------------------------- reading the files
+def _answers(text: str, template_name: str, starred_only: bool = False) -> list:
+    """Answered '- Label: answer' bullets that differ from the blank template. An answer may sit
+    after the colon or on the indented line(s) right below the bullet. TBD, ?, … don't count."""
     baseline = {line.strip() for line in _read(TEMPLATES / template_name).splitlines()}
-    return [m.group(0).strip() for m in re.finditer(pattern.pattern + r".*$", text, re.M)
-            if m.group(0).strip() not in baseline]
+    lines = text.splitlines()
+    out = []
+    for i, line in enumerate(lines):
+        m = re.match(r"^\s*-\s+(★\s*)?([^:\n]{2,}?):[ \t]*(.*)$", line)
+        if not m or (starred_only and not m.group(1)):
+            continue
+        answer = m.group(3).strip()
+        if not answer:
+            follow = []
+            for nxt in lines[i + 1:]:
+                if not nxt.strip() or re.match(r"^\s*(-|#|\|)", nxt):
+                    break
+                follow.append(nxt.strip())
+            answer = " ".join(follow)
+        if not answer or EMPTY_ANSWER.match(answer) or line.strip() in baseline:
+            continue
+        out.append((m.group(2).strip(), answer))
+    return out
 
 
 def _section(text: str, heading: str) -> str:
@@ -58,98 +94,157 @@ def _section(text: str, heading: str) -> str:
     return m.group(1) if m else ""
 
 
-def _concept(design_text: str) -> dict:
-    """project.concept from design.yaml: PyYAML when available, else a small line parser."""
+def _parse_inline(body: str) -> dict:
+    """{status: chosen, statement: "a, b", id: C-01} -> dict (quotes respected)."""
+    out, key, buf, quote = {}, None, "", None
+    for ch in body.strip().strip("{}") + ",":
+        if quote:
+            if ch == quote:
+                quote = None
+            else:
+                buf += ch
+        elif ch in "\"'":
+            quote = ch
+        elif ch == ":" and key is None:
+            key, buf = buf.strip(), ""
+        elif ch == ",":
+            if key:
+                out[key] = buf.strip()
+            key, buf = None, ""
+        else:
+            buf += ch
+    return out
+
+
+def read_project(design_text: str) -> dict:
+    """project: {phase, name, concept} from design.yaml, with or without PyYAML."""
     try:
         import yaml  # type: ignore
         data = yaml.safe_load(design_text) or {}
-        concept = (data.get("project") or {}).get("concept") or {}
-        return concept if isinstance(concept, dict) else {}
+        project = data.get("project") or {}
+        return project if isinstance(project, dict) else {}
     except Exception:
         pass
-    concept, inside, indent = {}, False, 0
-    for line in design_text.splitlines():
-        if re.match(r"^\s*concept:\s*$", line):
-            inside, indent = True, len(line) - len(line.lstrip())
+    project, concept, in_project, in_concept, concept_indent = {}, {}, False, False, 0
+    for raw in design_text.splitlines():
+        line = re.sub(r"\s+#.*$", "", raw) if not raw.lstrip().startswith("#") else ""
+        if not line.strip():
             continue
-        if inside:
-            if line.strip() and (len(line) - len(line.lstrip())) <= indent:
-                break
-            m = re.match(r"^\s*(\w+):\s*(.*?)\s*(#.*)?$", line)
-            if m and not line.lstrip().startswith("#"):
-                concept[m.group(1)] = m.group(2).strip().strip('"').strip("'")
-    return concept
+        indent = len(line) - len(line.lstrip())
+        if indent == 0:
+            in_project, in_concept = line.startswith("project:"), False
+            continue
+        if not in_project:
+            continue
+        m = re.match(r"^\s*(\w+):\s*(.*)$", line)
+        if not m:
+            continue
+        key, value = m.group(1), m.group(2).strip()
+        if in_concept and indent > concept_indent:
+            concept[key] = value.strip("\"'")
+            continue
+        in_concept = False
+        if key == "concept":
+            if value.startswith("{"):
+                concept.update(_parse_inline(value))
+            else:
+                in_concept, concept_indent = True, indent
+        elif indent <= 2:
+            project[key] = value.strip("\"'")
+    project["concept"] = concept
+    return project
 
 
-def _placeholder(text: str) -> bool:
-    return not text or text.startswith("<") or text.upper() in {"TBD", "TODO", "..."}
-
-
+# ------------------------------------------------------------------------- the check
 def check(project: Path) -> dict:
-    """Return {'ready': bool, 'concept_decided': bool, 'items': [(status, name, detail)], 'missing': [...]}."""
+    """{'ready', 'concept_state', 'phase', 'items': [(ok, name, detail)], 'missing': [...]}"""
     items = []
+    proj = read_project(_read(project / "design.yaml"))
+    phase = str(proj.get("phase") or ("brief" if (project / "PROJECT-BRIEF.md").exists() else "schematic"))
 
     brief = _read(project / "PROJECT-BRIEF.md")
-    n = len(_new_lines(brief, "PROJECT-BRIEF.md", ANSWERED))
-    ok = bool(brief) and n >= THRESHOLDS["brief_answers"] and "<project name>" not in brief.splitlines()[0]
-    items.append(("ok" if ok else "missing", "brief",
-                  f"PROJECT-BRIEF.md: {n} answered lines" if brief else "PROJECT-BRIEF.md not found"))
+    n = len(_answers(brief, "PROJECT-BRIEF.md"))
+    ok = bool(brief) and n >= 8 and "<project name>" not in (brief.splitlines() or [""])[0]
+    items.append((ok, "brief", f"PROJECT-BRIEF.md: {n} answers" if brief else "PROJECT-BRIEF.md not found"))
 
     program = _read(project / "PROGRAM.md")
-    template_rows = {line.strip() for line in _read(TEMPLATES / "PROGRAM.md").splitlines()}
-    rows = [line for line in _section(program, "Space list").splitlines()
-            if re.match(r"^\|\s*[A-Z][A-Z0-9-]*\s*\|", line) and line.strip() not in template_rows
-            and not line.startswith("| ID")]
-    ok = bool(program) and len(rows) >= THRESHOLDS["program_rows"]
-    items.append(("ok" if ok else "missing", "program",
-                  f"PROGRAM.md: {len(rows)} spaces listed" if program else "PROGRAM.md not found"))
+    rows = [l for l in _section(program, "Space list").splitlines()
+            if re.match(r"^\|\s*[A-Z][A-Z0-9-]*\s*\|", l) and not l.startswith("| ID")]
+    ok = bool(program) and len(rows) >= 6
+    items.append((ok, "program", f"PROGRAM.md: {len(rows)} spaces listed" if program else "PROGRAM.md not found"))
 
-    taste = _read(project / "TASTE.md")
-    starred = len(_new_lines(taste, "TASTE.md", STARRED))
-    answered = len(_new_lines(taste, "TASTE.md", ANSWERED))
-    dial = re.search(r"Surprise dial[^:\n]*:[ \t]*([1-5])", taste)
-    ok = bool(taste) and (starred >= THRESHOLDS["taste_starred"] or answered >= THRESHOLDS["taste_answers"])
-    detail = f"TASTE.md: {starred}/6 starred answered, surprise dial {dial.group(1) if dial else 'not set'}" \
-        if taste else "TASTE.md not found"
-    items.append(("ok" if ok else "missing", "taste", detail))
+    def taste_state(text: str, name: str):
+        starred = _answers(text, "TASTE.md", starred_only=True)
+        dial = next((a for label, a in starred if "surprise dial" in label.lower() and re.match(r"^[1-5]\b", a)), None)
+        others = [a for label, a in starred if "surprise dial" not in label.lower()]
+        return bool(text) and dial is not None and len(others) >= 3, \
+            f"{name}: surprise dial {dial[0] if dial else 'not set'}, {len(others)}/5 other ★ answered"
+    ok, detail = taste_state(_read(project / "TASTE.md"), "TASTE.md")
+    if not ok:
+        prof_ok, prof_detail = taste_state(_read(project.parent / "TASTE-PROFILE.md"), "TASTE-PROFILE.md (one folder up)")
+        if prof_ok:
+            ok, detail = True, prof_detail
+    items.append((ok, "taste", detail if (project / "TASTE.md").exists() or ok else "TASTE.md not found"))
 
     precedents = _read(project / "PRECEDENTS.md")
-    entries = [h for h in re.findall(r"^###\s+(.+)$", precedents, re.M)
-               if not h.lower().startswith("example") and not h.startswith("<")]
-    ok = len(entries) >= THRESHOLDS["precedents"]
-    items.append(("ok" if ok else "missing", "precedents",
-                  f"PRECEDENTS.md: {len(entries)} entries" if precedents else "PRECEDENTS.md not found"))
+    entries = [b for b in re.split(r"^###\s+", precedents, flags=re.M)[1:]
+               if not b.lower().startswith("example") and not b.startswith("<")
+               and re.search(r"Move to take:[ \t]*\S", b)]
+    items.append((len(entries) >= 2, "precedents",
+                  f"PRECEDENTS.md: {len(entries)} entries with a move" if precedents else "PRECEDENTS.md not found"))
 
-    concept = _concept(_read(project / "design.yaml"))
-    status = str(concept.get("status", "")).lower()
-    decided = (status == "chosen" and not _placeholder(str(concept.get("statement", "")))) or \
-              (status == "skipped" and not _placeholder(str(concept.get("skip_reason", ""))))
-    if decided:
-        detail = f"concept {status}: " + str(concept.get("statement") or concept.get("skip_reason"))[:90]
-    else:
-        detail = "no concept chosen in design.yaml (project.concept), and no skip recorded"
-    items.append(("ok" if decided else "missing", "concept", detail))
+    state, problem = concept_status(proj.get("concept") or {})
+    concept = proj.get("concept") or {}
+    detail = {"chosen": f"concept chosen: {str(concept.get('statement'))[:90]}",
+              "skipped": f"concept skipped on purpose: {str(concept.get('skip_reason'))[:90]}"}.get(
+        state, problem or "no concept chosen yet (design.yaml project.concept)")
+    items.append((state in ("chosen", "skipped"), "concept", detail))
 
-    missing = [name for st, name, _ in items if st != "ok"]
+    missing = [name for ok, name, _ in items if not ok]
+    decided = state in ("chosen", "skipped")
     return {"ready": decided and "brief" not in missing and "program" not in missing,
-            "concept_decided": decided, "items": items, "missing": missing}
+            "concept_state": state, "phase": phase, "items": items, "missing": missing}
 
 
-def reminder(result: dict) -> str:
-    gaps = ", ".join(result["missing"])
-    lines = [
-        "[arch-design-kit · readiness check (playbook 08, CR-GATE-1)]",
-        f"This project is not ready for schematic design. Missing: {gaps}.",
-        "Before producing any floor plan, model, massing or render, tell the user this plainly, then ask",
-        "which they want:",
-        "  (a) run the concept-studio skill now (it fills the gaps with them, then generates concepts);",
-        "  (b) fill the gaps together first: for taste, the six starred questions in TASTE.md;",
-        "      for precedents, 2 or more buildings with the move to take from each;",
-        "  (c) skip the concept phase: record project.concept.status: skipped and their reason in design.yaml.",
-        "Do not start geometry until they choose. Status by item:",
-    ]
-    lines += [f"  - {'OK ' if st == 'ok' else 'GAP'} {name}: {detail}" for st, name, detail in result["items"]]
-    return "\n".join(lines)
+def next_steps(result: dict) -> list:
+    """Plain next steps built from the actual gaps."""
+    m, steps = set(result["missing"]), []
+    if result["phase"] in ("brief", "programming") and m & {"brief", "program"}:
+        steps.append("finish the " + " and ".join(x for x in ("brief", "program") if x in m) + " first")
+    if "taste" in m:
+        steps.append("set the surprise dial and answer the ★ questions in TASTE.md")
+    if "precedents" in m:
+        steps.append("add 2+ buildings to PRECEDENTS.md, each with the move to take")
+    if "concept" in m:
+        steps.append("run the concept studio, or record a deliberate skip with a reason")
+    return steps
+
+
+def claude_reminder(result: dict) -> str:
+    steps = "; ".join(next_steps(result))
+    return ("[arch-design-kit · CR-GATE-1] Before drawing anything: this project (phase: "
+            f"{result['phase']}) is missing {', '.join(result['missing'])}. In one or two sentences, tell the "
+            f"user and offer: {steps}. Start geometry only after they answer.")
+
+
+# ------------------------------------------------------------------------- hook mode
+def _studio_running(project: Path, result: dict) -> bool:
+    concepts = _read(project / "CONCEPTS.md")
+    started = bool(re.search(r"^###\s+C-\d+\s*·\s*\S", concepts, re.M)) or any((project / "concepts").glob("C-*.yaml"))
+    return result["concept_state"] == "undecided" and (result["phase"] == "concept" or started)
+
+
+def _once(session: str, project: Path) -> bool:
+    """True the first time for this session and project, again after MARKER_TTL_S."""
+    key = hashlib.sha1(f"{session}|{project.resolve()}".encode()).hexdigest()[:16]
+    marker = Path(tempfile.gettempdir()) / f"arch-kit-ready-{key}"
+    try:
+        if marker.exists() and time.time() - marker.stat().st_mtime < MARKER_TTL_S:
+            return False
+        marker.write_text("shown", encoding="utf-8")
+    except OSError:
+        pass
+    return True
 
 
 def hook() -> int:
@@ -158,22 +253,38 @@ def hook() -> int:
     except Exception:
         return 0
     try:
-        project = Path(event.get("cwd") or os.getcwd())
-        if not any((project / f).exists() for f in ("design.yaml", "PROJECT-BRIEF.md")):
+        prompt = str(event.get("prompt", ""))
+        if not design_intent(prompt) or EXEMPT.search(prompt):
             return 0
-        if not DESIGN_INTENT.search(str(event.get("prompt", ""))):
-            return 0
+        cwd = Path(event.get("cwd") or os.getcwd())
+        session = str(event.get("session_id", ""))
+        project = cwd if any((cwd / f).exists() for f in PROJECT_FILES) else None
+        if project is None:
+            below = [d for d in sorted(cwd.iterdir()) if d.is_dir() and any((d / f).exists() for f in PROJECT_FILES)]
+            if len(below) == 1:
+                project = below[0]
+            elif len(below) > 1:
+                if _once(session, cwd):
+                    print("[arch-design-kit] Several design projects are in this folder ("
+                          + ", ".join(d.name for d in below[:6]) + "). Ask which one the user means before drawing.")
+                return 0
+            else:
+                if _once(session, cwd):
+                    print("[arch-design-kit] No design project is set up here. Before drawing, offer in one sentence "
+                          "to set one up from the kit's templates (brief, program, taste, precedents) and run the "
+                          "concept studio; if the user only wants a quick sketch, go ahead and label it as one.")
+                return 0
         result = check(project)
         if result["ready"]:
             return 0
-        # say it once per session for the same set of gaps
-        key = hashlib.sha1((str(event.get("session_id", "")) + str(project) + ",".join(result["missing"]))
-                           .encode()).hexdigest()[:16]
-        marker = Path(tempfile.gettempdir()) / f"arch-kit-ready-{key}"
-        if marker.exists():
+        if result["concept_state"] == "skipped":
+            if "taste" in result["missing"] and _once(session, project):
+                print("[arch-design-kit] The concept phase was skipped on purpose. Taste notes are thin; "
+                      "consider asking the ★ questions in TASTE.md, without blocking the work.")
             return 0
-        marker.write_text("shown", encoding="utf-8")
-        print(reminder(result))
+        if _studio_running(project, result) or not _once(session, project):
+            return 0
+        print(claude_reminder(result))
     except Exception:
         return 0
     return 0
@@ -184,13 +295,13 @@ def main(argv: list) -> int:
         return hook()
     project = Path(next((a for a in argv if not a.startswith("--")), "."))
     result = check(project)
-    print(f"Readiness: {project.resolve()}")
-    for st, name, detail in result["items"]:
-        print(f"  {'OK ' if st == 'ok' else 'GAP'}  {name:<11} {detail}")
+    print(f"Readiness: {project.resolve()}  (phase: {result['phase']})")
+    for ok, name, detail in result["items"]:
+        print(f"  {'OK ' if ok else 'GAP'}  {name:<11} {detail}")
     if result["ready"]:
-        print("Ready for schematic design.")
+        print("Ready to design.")
         return 0
-    print(reminder(result).split("\n", 1)[1].split("Status by item:")[0].rstrip())
+    print("Next: " + "; ".join(next_steps(result)) + ".")
     return 1
 
 

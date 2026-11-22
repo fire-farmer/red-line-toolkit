@@ -30,7 +30,8 @@ arch-design-kit/
 │   ├── 06-drawing-and-model-standards.md   units, spec format, LOD, IFC, NCS sheets/layers
 │   ├── 07-process-and-workflow.md          the loop, phases and gates, professional boundary
 │   ├── 08-concept-design.md     creativity: readiness, surprise dial, lenses, critic, push then pull
-│   ├── precedents.md            starter library: 20 houses, each with the move to take
+│   ├── precedents.md            starter library: canonical + vernacular houses, each with the move to take
+│   ├── provocations.md          the deck of analogies and provocation cards
 │   ├── CHECKLISTS.md            per-iteration check + gate checklists
 │   ├── VERIFY.md                values to confirm against the primary code text
 │   └── styles/                  style-module system + catalog of 12 American styles
@@ -45,10 +46,14 @@ arch-design-kit/
 │   ├── freecad_load_ifc.py      runs inside FreeCAD: loads that IFC and reports what FreeCAD built
 │   ├── ready_check.py           "are we ready to design?": brief, program, taste, precedents, concept
 │   ├── explore_variants.py      searches a concept family; keeps the most different that pass
-│   ├── test_tools.py            37 tests, including rulebook consistency
+│   ├── concept_board.py         concept cards with parti/section diagrams; blind jury pack
+│   ├── deal.py                  deals each concept lens its own precedents, analogy, provocation
+│   ├── sun.py                   solstice sun angles, shadows, overhang depths for a latitude
+│   ├── test_tools.py            tests for every tool, including rulebook consistency
 │   └── requirements.txt
 ├── examples/ranch-3bed/         a worked spec + its generated plan (SVG/PNG) and IFC
-├── examples/bar-house/          a concept-family generator for explore_variants.py
+├── examples/bar-house/          a complete concept-family generator for explore_variants.py
+├── examples/court-house/        a rooms-only sketch generator (concept mode)
 ├── skills/arch-design-playbook/ the Claude skill that loads all of this automatically
 ├── skills/concept-studio/       the creative concept phase (playbook 08)
 ├── hooks/hooks.json             warns before design work when the creative groundwork is missing
@@ -81,10 +86,12 @@ Try breaking a rule: change Bedroom 2's egress window `net_clear_h_in` to 30, or
 The playbook makes designs correct; [chapter 08](playbook/08-concept-design.md) makes them worth building. Before anything gets drawn, Claude checks readiness and **warns you** if your taste, precedents or a chosen concept are missing, so you never have to remember the method. The `concept-studio` skill then:
 
 - bans the obvious answers;
-- generates 8–12 different concepts in parallel through separate lenses;
-- searches concept families with `explore_variants.py`;
-- has a separate critic judge boldness;
-- pushes your pick further, then protects its idea through every later fix.
+- deals each of six parallel lenses its own cards, and gets about 12 concepts back, each drawn as a parti and a section;
+- runs a second round from your hot/cold reactions;
+- puts the concepts to a blind jury that names champions;
+- walks you through the shortlist in words;
+- pushes your pick as pure, extreme and inverted versions;
+- protects the idea with invariants and a blind read-back at every gate.
 
 ## Starting a project
 

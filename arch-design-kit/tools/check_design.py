@@ -18,6 +18,7 @@ and the Authority Having Jurisdiction (AHJ) have the final say.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -83,7 +84,56 @@ SLEEPING = {"bedroom"}
 CEILING_REQUIRED = HABITABLE | {"hall", "bath", "powder", "laundry", "foyer", "mudroom"}
 SERVICE_CEILING = {"bath", "powder", "laundry"}
 CIRCULATION = {"hall", "foyer", "stair", "mudroom", "landing", "gallery"}
-UNCONDITIONED = {"garage", "porch", "deck", "patio", "carport"}
+UNCONDITIONED = {"garage", "porch", "deck", "patio", "carport", "court"}
+OUTDOOR = {"porch", "deck", "patio", "court"}           # count as "outside" for an escape-capable wall
+PHASES = ("brief", "programming", "concept", "schematic", "design-development", "construction-documents")
+PRE_SCHEMATIC = ("brief", "programming", "concept")
+# Concept mode (playbook 08, CR-HARD-1): only these rules can stop a concept sketch.
+CONCEPT_RULES = {"G-UNITS-1", "G-SPEC-1", "G-OVERLAP-1", "Z-SETBACK-1", "C-STAIR-2", "C-STAIR-6",
+                 "CR-HARD-1", "CR-GATE-1", "CR-KEEP-1"}
+KIT = Path(__file__).resolve().parent.parent
+_STOP = {"a", "an", "the", "with", "and", "of", "in", "on", "to", "for", "house", "home", "that", "is", "it",
+         "its", "our", "we", "style", "styled", "inspired", "plan", "open"}
+
+
+def style_words() -> set:
+    """Words from the style catalog's headings, e.g. 'modern', 'farmhouse', 'craftsman'."""
+    try:
+        text = (KIT / "playbook" / "styles" / "catalog.md").read_text(encoding="utf-8")
+    except OSError:
+        return set()
+    words = set()
+    for heading in re.findall(r"^###\s+(.+)$", text, re.M):
+        words |= {w for w in re.findall(r"[a-z]+", heading.lower()) if w not in _STOP}
+    return words
+
+
+def concept_status(concept: dict) -> tuple:
+    """(state, problem) for project.concept. state is 'chosen', 'skipped' or 'undecided'.
+
+    Shared by check_design.py and ready_check.py so the two never disagree (CR-GATE-1, CR-IDEA-1).
+    A chosen concept needs a statement with at least five meaningful words once style names and
+    filler are removed: "modern farmhouse with a porch" is a style plus a feature, not an idea.
+    A skip needs a reason of three or more words.
+    """
+    concept = concept if isinstance(concept, dict) else {}
+    status = str(concept.get("status") or "").strip().lower()
+    statement = str(concept.get("statement") or "").strip()
+    reason = str(concept.get("skip_reason") or "").strip()
+    if status == "chosen":
+        if not statement or statement.startswith("<"):
+            return "undecided", "status is chosen but there is no concept statement"
+        words = re.findall(r"[a-z']+", statement.lower())
+        meaningful = [w for w in words if w not in _STOP and w not in style_words()]
+        if len(meaningful) < 5:
+            return "undecided", ("the statement reads like a style or a feature list, not a generative idea "
+                                 "(CR-IDEA-1): say what the house is organized around")
+        return "chosen", None
+    if status == "skipped":
+        if reason.startswith("<") or len(re.findall(r"\w+", reason)) < 3:
+            return "undecided", "a skipped concept needs a skip_reason of a few words"
+        return "skipped", None
+    return "undecided", None
 WALLS = {"N", "S", "E", "W"}
 MM_PER_IN = 25.4
 
@@ -97,8 +147,12 @@ class Finding:
 
 
 class Checker:
-    def __init__(self, spec: dict):
+    def __init__(self, spec: dict, mode: str | None = None):
+        """mode 'full' checks every rule; 'concept' only the hard limits (CR-HARD-1).
+        Default: 'concept' when project.phase is concept, else 'full'."""
         self.spec = spec
+        phase = (spec.get("project") or {}).get("phase")
+        self.mode = mode or ("concept" if phase == "concept" else "full")
         self.findings: list[Finding] = []
         self.limits = dict(LIMITS)
         overrides = spec.get("limits") or {}
@@ -166,6 +220,13 @@ class Checker:
         self.check_circulation(levels)
         self.check_connectivity(levels, by_id)
         self.check_concept()
+        self.check_hard_limits(levels)
+        if self.mode == "concept":
+            deferred = [f for f in self.findings if f.rule not in CONCEPT_RULES and f.severity != "INFO"]
+            self.findings = [f for f in self.findings if f.rule in CONCEPT_RULES]
+            if deferred:
+                self.add("INFO", "CR-HARD-1", "concept mode",
+                         f"{len(deferred)} later-phase findings deferred until schematic design (Gate 2)")
         return self.findings
 
     def check_level(self, lv: dict, above, below, ud: bool) -> None:
@@ -497,23 +558,107 @@ class Checker:
                      "rafters without ceiling joists or rafter ties need a structural ridge beam, engineered (R802)")
 
     def check_concept(self) -> None:
-        """CR-GATE-1: from schematic design on, a concept is chosen (with its statement) or skipped on purpose."""
+        """CR-GATE-1: from schematic design on, a concept is chosen or skipped on purpose.
+        CR-KEEP-1: the chosen concept's invariants still hold, and its moments are listed."""
         project = self.spec.get("project") or {}
-        if project.get("phase", "schematic") in ("programming", "concept"):
-            return
         c = project.get("concept") or {}
-        status = str(c.get("status", "")).lower()
-        stated = str(c.get("statement") or "").strip()
-        reason = str(c.get("skip_reason") or "").strip()
-        if status == "chosen" and stated and not stated.startswith("<"):
-            self.add("INFO", "CR-KEEP-1", "project.concept",
-                     f"concept: \"{stated[:100]}\" (test the design against it at every gate)")
-        elif status == "skipped" and reason and not reason.startswith("<"):
-            self.add("INFO", "CR-GATE-1", "project.concept", f"concept phase skipped on purpose: {reason[:100]}")
-        else:
-            self.add("WARN", "CR-GATE-1", "project.concept",
-                     "no concept chosen: run the concept phase (playbook 08, concept-studio skill) "
-                     "or record status: skipped with a skip_reason")
+        if project.get("phase", "schematic") not in PRE_SCHEMATIC:
+            state, problem = concept_status(c)
+            if state == "chosen":
+                self.add("INFO", "CR-KEEP-1", "project.concept",
+                         f"concept: \"{str(c.get('statement'))[:110]}\" (test the design against it at every gate)")
+            elif state == "skipped":
+                self.add("INFO", "CR-GATE-1", "project.concept",
+                         f"concept phase skipped on purpose: {str(c.get('skip_reason'))[:100]}")
+            else:
+                self.add("WARN", "CR-GATE-1", "project.concept",
+                         (problem + "; " if problem else "no concept chosen: ") +
+                         "run the concept phase (playbook 08, concept-studio skill) or record status: skipped "
+                         "with a skip_reason")
+        if not isinstance(c, dict):
+            return
+        for moment in c.get("moments") or []:
+            self.add("INFO", "CR-KEEP-1", "project.concept.moments", f"moment to keep: {moment}")
+        for inv in c.get("invariants") or []:
+            if isinstance(inv, str):
+                self.add("INFO", "CR-KEEP-1", "project.concept.invariants", f"check by eye: {inv}")
+            elif isinstance(inv, dict):
+                broken = self.invariant_broken(inv)
+                if broken:
+                    self.add("WARN", "CR-KEEP-1", "project.concept.invariants", f"concept invariant broken: {broken}")
+
+    def invariant_broken(self, inv: dict) -> str | None:
+        """None when a machine-checkable invariant holds, else a description of how it fails."""
+        rooms = {}
+        for lv in self.spec.get("levels") or []:
+            for r in lv.get("rooms") or []:
+                if self.rect(r):
+                    rooms[r.get("id")] = (lv, r, self.rect(r))
+        habitable = [(rid, lv, r, rc) for rid, (lv, r, rc) in rooms.items() if r.get("type") in HABITABLE]
+        if "room_exists" in inv:
+            return None if inv["room_exists"] in rooms else f"room {inv['room_exists']} no longer exists"
+        if "room" in inv:
+            hit = rooms.get(inv["room"])
+            if hit is None:
+                return f"room {inv['room']} no longer exists"
+            _, _, (x, y, w, d) = hit
+            if "min_length_in" in inv and max(w, d) < self.n(inv["min_length_in"]):
+                return f"{inv['room']} is {fmt(max(w, d))} long; the concept needs {fmt(self.n(inv['min_length_in']))}"
+            if "min_area_sqft" in inv and w * d / 144 < float(inv["min_area_sqft"]):
+                return f"{inv['room']} is {w * d / 144:.0f} sq ft; the concept needs {inv['min_area_sqft']}"
+            return None
+        if "max_room_depth_in" in inv:
+            limit = self.n(inv["max_room_depth_in"])
+            deep = [rid for rid, _, _, (x, y, w, d) in habitable if min(w, d) > limit]
+            return f"rooms deeper than {fmt(limit)}: {', '.join(deep)}" if deep else None
+        if "all_rooms_touch" in inv:
+            target = rooms.get(inv["all_rooms_touch"])
+            if target is None:
+                return f"room {inv['all_rooms_touch']} no longer exists"
+            apart = [rid for rid, lv, _, rc in habitable
+                     if rid != inv["all_rooms_touch"] and (lv is not target[0] or shared_edge(rc, target[2]) is None)]
+            return f"rooms that no longer touch {inv['all_rooms_touch']}: {', '.join(apart)}" if apart else None
+        if "glazing_share" in inv:
+            want = inv["glazing_share"] or {}
+            total = side = 0.0
+            for lv in self.spec.get("levels") or []:
+                for r in lv.get("rooms") or []:
+                    for win in r.get("windows") or []:
+                        a = (self.n(win.get("width_in")) or 0) * (self.n(win.get("height_in")) or 0)
+                        total += a
+                        side += a if win.get("wall") == want.get("wall") else 0
+            share = side / total if total else 0.0
+            if share < float(want.get("min", 0)):
+                return f"{share:.0%} of the glazing faces {want.get('wall')}; the concept needs {float(want['min']):.0%}"
+            return None
+        self.add("WARN", "G-SPEC-1", "project.concept.invariants", f"unknown invariant {inv}")
+        return None
+
+    def check_hard_limits(self, levels: list) -> None:
+        """CR-HARD-1: the area budget, and (in concept mode) a bedroom that could never get an escape opening."""
+        project = self.spec.get("project") or {}
+        budget = project.get("area_budget_sqft")
+        if budget:
+            tol = float(project.get("area_tolerance", 0.15))
+            net = sum(r[2] * r[3] / 144 for lv in levels for room in (lv.get("rooms") or [])
+                      if room.get("type") not in UNCONDITIONED and (r := self.rect(room)))
+            if abs(net - float(budget)) > tol * float(budget):
+                self.add("ERROR" if self.mode == "concept" else "WARN", "CR-HARD-1", "project.area_budget_sqft",
+                         f"net conditioned area {net:.0f} sq ft is outside the budget {float(budget):.0f} ± {tol:.0%}")
+        if self.mode != "concept":
+            return
+        for lv in levels:
+            rooms = [r for r in (lv.get("rooms") or []) if self.rect(r)]
+            for room in rooms:
+                if room.get("type") not in SLEEPING:
+                    continue
+                x, y, w, d = self.rect(room)
+                covered = sum((e[3] - e[2]) for other in rooms if other is not room
+                              and other.get("type") not in OUTDOOR
+                              and (e := shared_edge(self.rect(room), self.rect(other))) is not None)
+                if 2 * (w + d) - covered < 36:
+                    self.add("ERROR", "CR-HARD-1", f"{lv.get('id')}/{room.get('id')}",
+                             "bedroom has no outside wall, so it can never get an escape opening (C-EGR-1)")
 
     def check_connectivity(self, levels: list, by_id: dict) -> None:
         """G-CONN-1: every conditioned room is reachable from an egress door through doors,
@@ -750,20 +895,22 @@ def main(argv: list[str]) -> int:
     args = [a for a in argv if not a.startswith("--")]
     if len(args) != 1:
         print(__doc__.strip().splitlines()[0])
-        print("usage: check_design.py <design.yaml|design.json> [--json]")
+        print("usage: check_design.py <design.yaml|design.json> [--json] [--concept|--full]")
         return 2
     try:
         spec = load(args[0])
     except Exception as exc:  # unreadable or malformed spec
         print(f"check_design.py: cannot read {args[0]}: {exc}", file=sys.stderr)
         return 2
-    findings = Checker(spec or {}).run()
+    mode = "concept" if "--concept" in argv else "full" if "--full" in argv else None
+    checker = Checker(spec or {}, mode)
+    findings = checker.run()
     errors = sum(f.severity == "ERROR" for f in findings)
     if "--json" in argv:
         print(json.dumps([asdict(f) for f in findings], indent=2))
     else:
         name = (spec.get("project") or {}).get("name", args[0])
-        print(f"Design check: {name}")
+        print(f"Design check: {name}" + (" (concept mode: hard limits only, CR-HARD-1)" if checker.mode == "concept" else ""))
         code = str(((spec.get("project") or {}).get("jurisdiction") or {}).get("code", ""))
         if "2024" in code:
             print("  note: section numbers below cite the IRC 2021; the 2024 IRC renumbered much of Chapter 3 "

@@ -74,15 +74,18 @@ Moves that reliably raise creativity, each one built into the studio:
 
 | Move | Prompt it like this |
 |---|---|
-| Ban the obvious (CR-OBVIOUS-1) | "First list the 5 most predictable answers to this brief. None of your concepts may be one of them." |
-| Range, not a design (CR-SPREAD-1) | "Give me 10 concepts that differ in parti, section, relation to the ground, light and what the house is about, not in finishes." |
-| Separate contexts (CR-LENS-1) | "Run each lens as its own parallel subagent; don't let them see each other's ideas." |
-| An idea, not a style (CR-IDEA-1) | "One-sentence concept statement each. No style names, no feature lists." |
-| Specifics (CR-SPECIFIC-1) | "Use the oak, the downhill view, our Sunday breakfast, the Azuma House's court move and a boat cabin as an analogy." |
-| Search a family (CR-SEARCH-1) | "Write a generator for the courtyard family and run explore_variants; show me the 6 most different that pass." |
-| Judge boldness (CR-CRITIC-1) | "Have a separate critic score originality and delight, and say what would make each more surprising." |
-| Push, then pull (CR-PUSH-1) | "Take concept 4 thirty percent further than feels comfortable. Then make it buildable without breaking its statement." |
-| Protect the idea (CR-KEEP-1) | "Before you fix this, does the change keep the concept statement true? If not, ask me." |
+| Ban the obvious (CR-OBVIOUS-1) | "First list the 5 most predictable answers to this brief. None of your concepts may be one of them, and put them in the jury pack as controls." |
+| Separate contexts (CR-LENS-1) | "Run each lens as its own parallel subagent. Give it the program as areas and must-haves only, not the adjacency matrix or the style." |
+| Dealt specifics (CR-SPECIFIC-1) | "Run deal.py and sun.py; give each lens its own cards and the real sun angles. No fixed example lists." |
+| An idea, drawn (CR-IDEA-1) | "One-sentence statement, plus a parti and a section diagram per concept. Build the board and look at it first." |
+| Search a family (CR-SEARCH-1) | "Write a rooms-only sketch generator for the courtyard family and run explore_variants with our 1,900 sq ft budget." |
+| Second round (CR-ROUND-1) | "Here's my hot/cold sort. Cross C-02's plan with C-07's section; purify C-04; invert C-09." |
+| A jury, not a score (CR-CRITIC-1) | "Run the blind jury: owner's proxy, studio critic, builder, the site. Champions and kills, pairwise." |
+| Walk it (CR-WALK-1) | "Walk me through C-07 arriving with groceries in the rain, on a winter morning, and with twelve people over." |
+| Push, then pull (CR-PUSH-1) | "Show C-07 as pure, extreme and inverted. Then make the one I pick buildable without breaking its statement." |
+| Protect the idea (CR-KEEP-1) | "Record invariants and moments for the concept. At every gate, run a blind read-back: what is this house about?" |
+
+The tools behind these moves: `ready_check.py` (the pre-design warning), `deal.py` (cards for each lens), `sun.py` (site sun angles and overhangs), `explore_variants.py` (concept families), and `concept_board.py` (the visual board and the blind jury pack).
 
 ### Schematic options (Gate 2)
 > Create three distinct schematic options as design-a.yaml, design-b.yaml and design-c.yaml: a compact two-story box, a single-level split-bedroom ranch, and an L around a south patio. Each must pass check_design.py with 0 errors. Render each one, then compare them in a table against the brief's top 3 priorities and the 01-foundation checklist. Recommend one.

@@ -1,19 +1,20 @@
 # Concept board: <project name>
 
-> Gate 1.5 (playbook 08). The concept-studio skill fills this out. Keep every section, even after a concept is chosen: the obvious list and the rejected concepts show what the chosen one beat.
+> Gate 1.5 (playbook 08). The concept-studio skill fills this out, and each concept also lives in `concepts/C-NN.yaml` with its diagrams (`concept_board.py` renders them as `concepts/index.html`). Keep every section: the obvious list and the rejected concepts show what the chosen one beat. **Once a concept is chosen, sessions read only `project.concept` in design.yaml, not this board.**
 
-## 1. Design questions (from the brief)
+## 1. Design questions
 1.
 2.
 3.
 
 ## 2. Hard limits while exploring (CR-HARD-1)
 - Buildable envelope:
-- Area budget (±15%):
-- Life safety (escape openings possible; stair fits floor-to-floor):
+- Area budget (design.yaml `project.area_budget_sqft`, ±15%):
+- Life safety (every bedroom on an outside wall; the stair fits floor to floor):
 - Must-haves / must-nots:
+- Sun numbers (`sun.py`):
 
-## 3. The obvious list: five predictable answers (CR-OBVIOUS-1)
+## 3. The obvious list (CR-OBVIOUS-1; also in concepts/obvious.yaml)
 1.
 2.
 3.
@@ -22,31 +23,44 @@
 
 ## 4. Spread matrix (CR-SPREAD-1)
 
-| ID | Lens | Grounded / stretch / wild | Parti | Section | Ground | Light | Outdoor | About |
-|---|---|---|---|---|---|---|---|---|
-| C-01 | | | | | | | | |
+| ID | Round | Lens | Kind | Parti | Section | Ground | Light | Outdoor | About |
+|---|---|---|---|---|---|---|---|---|---|
+| C-01 | 1 | | | | | | | | |
 
-## 5. Concepts (CR-IDEA-1)
+## 5. Owner's hot / cold sort (CR-ROUND-1)
 
-### C-01 · <name>
-- Concept statement:
-- Key move:
-- Diagram (words, or a link to an SVG):
-- Section idea:
-- What it gives up:
-- Precedent / analogy used:
+| ID | Hot / cold / tell me more | Owner's words |
+|---|---|---|
+| C-01 | | |
 
-## 6. Critique (CR-CRITIC-1, by a separate critic)
+## 6. Round two (cross / purify / invert)
 
-| ID | Originality | Coherence | Site fit | Delight | Taste fit | Boldest move | Weakest part | More surprising if… |
-|---|---|---|---|---|---|---|---|---|
-| C-01 | | | | | | | | |
+| ID | From | Task | Statement |
+|---|---|---|---|
+| C-13 | C-02 × C-07 | cross: parti of C-02, section of C-07 | |
 
-## 7. Shortlist and owner review
-- Strongest:
-- Boldest:
-- Best taste fit:
+## 7. Jury (CR-CRITIC-1; blind pack from `concept_board.py --jury`)
+
+| Juror | Champion (why) | Kill (why) | More surprising if… | Did an obvious answer outrank the concepts? |
+|---|---|---|---|---|
+| Owner's proxy | | | | |
+| Studio critic | | | | |
+| Builder | | | | |
+| The site | | | | |
+
+## 8. Shortlist, walkthroughs (CR-WALK-1) and owner review
+### C-__ · <name>
+- Statement:
+- Champion reasons:
+- Walkthrough: arriving with groceries in the rain:
+- Walkthrough: a winter morning:
+- Walkthrough: a party of twelve:
 - Owner's reactions (also logged in TASTE.md):
-- **Chosen:** C-__, statement: "…"
-- Push (CR-PUSH-1): what "about 30% further" means for this concept:
-- Recorded in design.yaml `project.concept` on: <date>
+
+## 9. Push and record (CR-PUSH-1, CR-KEEP-1)
+- Pure:
+- Extreme:
+- Inverted:
+- **Chosen:** C-__ (version: pure / extreme / inverted)
+- Invariants (3–5) and moments (2–3), copied into design.yaml `project.concept`:
+- Recorded on: <date>

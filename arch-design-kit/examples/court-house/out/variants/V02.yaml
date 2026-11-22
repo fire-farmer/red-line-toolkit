@@ -1,0 +1,114 @@
+project:
+  name: "Court house \xB7 E \xB7 V02"
+  units: in
+  phase: concept
+  area_budget_sqft: 1900
+  concept:
+    status: exploring
+    statement: Every room opens onto one walled garden at the center of the house.
+site:
+  lot_in:
+  - 840
+  - 1320
+  setbacks_in:
+    north: 300
+    south: 240
+    east: 72
+    west: 72
+  building_origin_in:
+  - 72
+  - 240
+levels:
+- id: L1
+  name: Main level
+  elevation_in: 0
+  ceiling_in: 108
+  rooms:
+  - id: GREAT
+    name: Great Room
+    type: living
+    rect:
+    - 0.0
+    - 0
+    - 348
+    - 144
+  - id: KITCHEN
+    name: Kitchen
+    type: kitchen
+    rect:
+    - 348.0
+    - 0
+    - 192
+    - 144
+  - id: PANTRY
+    name: Pantry
+    type: pantry
+    rect:
+    - 540.0
+    - 0
+    - 84.0
+    - 144
+  - id: BR2
+    name: Bedroom 2
+    type: bedroom
+    rect:
+    - 0.0
+    - 432
+    - 192
+    - 144
+  - id: BATH2
+    name: Bath 2
+    type: bath
+    rect:
+    - 192.0
+    - 432
+    - 108
+    - 144
+  - id: BR3
+    name: Bedroom 3
+    type: bedroom
+    rect:
+    - 300.0
+    - 432
+    - 192
+    - 144
+  - id: LINEN
+    name: Linen
+    type: closet
+    rect:
+    - 492.0
+    - 432
+    - 132.0
+    - 144
+  - id: ENTRY
+    name: Entry
+    type: foyer
+    rect:
+    - 0
+    - 144.0
+    - 144
+    - 120
+  - id: MUD
+    name: Mud / Laundry
+    type: laundry
+    rect:
+    - 0
+    - 264.0
+    - 144
+    - 168.0
+  - id: BRP
+    name: Primary Bedroom
+    type: bedroom
+    rect:
+    - 480
+    - 144
+    - 144
+    - 172.79999999999998
+  - id: COURT
+    name: Court
+    type: court
+    rect:
+    - 144
+    - 144
+    - 336
+    - 288

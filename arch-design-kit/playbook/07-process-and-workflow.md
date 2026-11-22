@@ -29,7 +29,7 @@ The workflow follows from that: **text and numbers in, code to geometry, numbers
 
 - **W-SPEC-1.** All geometry comes from `design.yaml`. If the owner says "make the kitchen bigger", Claude changes the spec, re-runs the checks and regenerates. It never edits a drawing or model by hand where that would leave the spec stale.
 - **W-PARAM-1.** Modeling code reads named parameters with units (`wall_ext_in = 6.5`, `plate_height_in = 109.125`) from the spec or a parameter block. There are no unexplained literals. A change happens in one place.
-- **W-CHECK-1.** Run the checker after every change. An ERROR blocks progress. A WARN gets resolved or logged.
+- **W-CHECK-1.** Run the checker after every change. An ERROR blocks progress. A WARN gets resolved or logged. In the concept phase the checker runs in **concept mode**: only hard limits are errors, and everything else is deferred to Gate 2 (CR-HARD-1).
 - **W-LOOK-1.** After the checks pass, render and **look at specific things**, written down before looking: "Do bedroom doors open off the hall?", "Is the stair landing clear?", "Does the kitchen triangle cross the island?" Vision is a supplement for what the checker can't see (flow, proportion, light, the feel of the plan). It never overrides a numeric check.
 - **W-SMALL-1.** Make one named change per iteration and keep the **last passing version** (D-NAME-1). If two correction rounds haven't fixed something, stop and ask the owner. Don't thrash.
 - **W-DEC-1.** Record every non-obvious decision, and every deviation from a rule, in `DECISIONS.md` with the rule IDs and the reason.

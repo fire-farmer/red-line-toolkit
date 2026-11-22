@@ -1,80 +1,100 @@
 ---
 name: concept-studio
 description: |
-  The creative concept phase for a house or small building (playbook 08): check readiness with the owner, frame design questions, ban the obvious, generate 8-12 genuinely different concepts in parallel through separate lenses, explore concept families parametrically, critique them for boldness, shortlist three, record the owner's reactions to their taste, push the chosen concept, and record it before schematic design. Use when the user wants concepts, options, ideas, a more creative or less generic design, or a fresh start on a design, and whenever the arch-design-kit readiness check reports that no concept is chosen.
+  The creative concept phase for a house or small building (playbook 08): readiness with the owner (taste, surprise dial, precedents), design questions and the obvious list, about 12 concepts from six parallel lenses fed with dealt cards, parametric sketch families, a visual board, the owner's hot/cold sort, a second round of crossbreeds, a blind jury with champions, walkthroughs, named push variants, and a concept recorded with invariants and moments. Use when the user wants concepts, ideas, options, a more creative or less generic design, or a fresh start, and whenever the arch-design-kit readiness check says no concept is chosen.
 ---
 
 # Concept studio
 
-You are running the concept phase of `${CLAUDE_PLUGIN_ROOT}/playbook/08-concept-design.md`. Read that chapter first; its rule IDs (CR-…) are cited below. The goal is **range first, then choice**: many different ideas, judged for boldness and fit, before the playbook makes one of them correct.
+You are running the concept phase in `${CLAUDE_PLUGIN_ROOT}/playbook/08-concept-design.md`. Read it first; the CR-… IDs below refer to it. Aim for **range first, then choice**: many genuinely different ideas, two rounds, a blind jury, then the owner picks, before the playbook makes the pick correct. Tools live in `${CLAUDE_PLUGIN_ROOT}/tools/`. Set `project.phase: concept` in `design.yaml` while this runs. That puts the checker in concept mode and keeps the pre-design warning quiet.
 
-## 0. Readiness (CR-GATE-1): never skip this conversation
+## 0. Readiness (CR-GATE-1, CR-TASTE-1)
 
-Run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/ready_check.py .` in the project folder.
+Run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/ready_check.py .`. If there are no project files yet, copy `${CLAUDE_PLUGIN_ROOT}/templates/*` into the folder first. Fill the gaps *with* the owner, a question or two at a time, in their words:
 
-- **No project files yet:** copy `${CLAUDE_PLUGIN_ROOT}/templates/*` into the folder first.
-- **Anything missing:** tell the owner plainly which pieces are missing and why each matters to creativity, then fill them together. Don't skip the gaps silently.
-  - **Taste:** ask the six ★ questions from `TASTE.md`, one or two at a time, conversationally. **Always ask for the surprise dial (1–5).** Write their answers in their own words.
-  - **Precedents:** offer 5–6 entries from `${CLAUDE_PLUGIN_ROOT}/playbook/precedents.md` that fit the brief, and ask for any building, room or photo they love. Record the move to take from each, and why it fits.
-  - **Brief or program gaps:** fill them in conversation, or note them as open questions. Never invent site or code facts (W-BRIEF-1).
-- **The owner wants to skip concepts:** fine. Record `project.concept.status: skipped` and their `skip_reason` in `design.yaml`, and hand back to the arch-design-playbook workflow.
+- **Taste.** The **surprise dial** (always ask), the ★ questions, and the **this-or-that pairs** in `TASTE.md`. People react better than they describe. If `TASTE-PROFILE.md` exists one folder up, start from it and confirm what still holds. If the owner has saved images, ask for them, read them for atmosphere and material patterns only, and write those down as moves.
+- **Precedents.** Offer 5–6 entries from `${CLAUDE_PLUGIN_ROOT}/playbook/precedents.md` that suit the brief, mixing canonical and vernacular. Ask for any building, room or photo they love, and record the move to take and why it fits.
+- **Brief or program gaps.** Ask about them, or list them as open questions. Never invent site or code facts (W-BRIEF-1).
+- **Area budget.** Put `project.area_budget_sqft` in `design.yaml`.
+- **The owner wants to skip:** record `project.concept.status: skipped` and their `skip_reason`, and hand back to the arch-design-playbook workflow.
 
 ## 1. Frame
 
-In `CONCEPTS.md` (copy it from the templates if missing):
+In `CONCEPTS.md` and the `concepts/` folder:
 
-1. Restate the brief as **3–5 design questions**, e.g. "How does a 40 ft lot get south light into every room?"
-2. Write the **hard limits** (CR-HARD-1): the envelope, the area budget ±15%, life-safety feasibility, and the must-haves and must-nots. Nothing else constrains this phase.
-3. Write **the obvious list** (CR-OBVIOUS-1): the five most predictable answers to the brief. No concept may be one of them.
-4. Read the **surprise dial** from `TASTE.md` and set the mix of grounded, stretch and wild concepts (chapter 08).
+1. Write **3–5 design questions**.
+2. Write the **hard limits** (CR-HARD-1).
+3. Write **the obvious list** (CR-OBVIOUS-1): the five most predictable answers. Put them in `CONCEPTS.md` §3 and in `concepts/obvious.yaml` as a YAML list.
+4. Run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/sun.py --lat <site latitude>` and keep the numbers for the site and light lenses.
+5. Run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/deal.py . --round 1` to deal each lens its own cards.
+6. Read the surprise dial and take each lens's two kinds (grounded, stretch or wild) from the dial table in chapter 08.
 
-## 2. Diverge in separate contexts (CR-LENS-1, CR-SPECIFIC-1)
+## 2. Diverge in separate contexts (CR-LENS-1, CR-SPECIFIC-1, CR-SPREAD-1, CR-IDEA-1)
 
-Dispatch **one subagent per lens, all in parallel, in a single message**. Use these lenses: site · light and climate · ritual · structure and material · constraint as fuel · contrarian. Each subagent sees only its own lens, never another's output. Give each one this prompt, filled in:
+Dispatch **six subagents in parallel, in one message**: site · light · ritual · structure · constraint · contrarian. Each gets this prompt, filled in, and nothing else. Leave out the adjacency matrix, the bubble diagram, the style and the other lenses:
 
-> You are generating architectural concepts through ONE lens: **<lens>**.
-> Brief: <3–5 line summary> · Design questions: <list> · Hard limits: <list> · Site specifics: <the tree, the view, the slope, the street, sun and wind> · Owner rituals and taste: <from TASTE.md, in the owner's words> · Precedent moves to consider: <2–3 from PRECEDENTS.md, with why> · One cross-domain analogy to consider: <e.g. a monastery cloister, a boat cabin, an engawa, a threshing floor, a library stack> · **Do not propose any of these obvious answers:** <the obvious list>.
-> Return **2 concepts**: one <grounded | stretch> and one <stretch | wild> (follow the surprise dial). For each give: a name; a **one-sentence concept statement** (the generative idea, not a style and not a feature list); the **key move**; a **diagram described in words** (parti, how you enter, where the light comes from); a **section idea**; **what it gives up**; and the precedent or analogy it uses. Respect the hard limits. Ignore every other rule: they come later.
+> You are generating house concepts through ONE lens: **<lens>**.
+> Brief: <3–5 lines> · Design questions: <list> · Program: <room list with areas only; must-haves; must-nots> · Hard limits: <envelope, area budget ±15%, every bedroom on an outside wall, stair fits> · Site: <the specific facts> <for site and light lenses: the sun.py numbers> · The owners, in their words: <rituals and taste lines> · Your cards: <this lens's block from deal.py> · Do **not** propose any of these: <the obvious list>.
+> <For the contrarian lens only: you may break ONE must-have if you name it and say what the trade buys.>
+> Return **2 concepts**: one **<kind 1>** and one **<kind 2>**. For each, write a file `concepts/C-<NN>.yaml` with these keys: id, name, round: 1, lens, kind, statement (one sentence, the generative idea: not a style, not a feature list), key_move, section_idea, gives_up, uses (which cards). Also write `concepts/C-<NN>-parti.svg` and `C-<NN>-section.svg`: simple diagrams about 400×300, not to scale, with this legend: solid = filled grey, void/court = white with a thin outline, entry = arrow, sun = arc, view = dashed line, ground = heavy line, north arrow. Use concept IDs <assigned range>.
 
-Then, yourself:
+Give each lens its own ID range (C-01–02, C-03–04, …) so the files never collide. Then:
 
-- **Assemble** the concepts into the spread matrix (CR-SPREAD-1). Where two share most of their cells, keep the stronger, and send one lens back out for a replacement unlike anything already on the board.
-- **Search families** (CR-SEARCH-1). For any concept that's really a family (bars, courtyards, split levels, pavilions), write a generator modeled on `${CLAUDE_PLUGIN_ROOT}/examples/bar-house/variants.py`. Run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/explore_variants.py <generator> --keep 6`, and put the contact sheet on the board. The generator is a sketch tool: room rectangles at the right scale, with the hard limits respected.
+- **Families** (CR-SEARCH-1). Where a concept is a family, write a sketch generator modeled on `${CLAUDE_PLUGIN_ROOT}/examples/court-house/variants.py`, with room rectangles only. Run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/explore_variants.py <generator> --keep 6 --area-target <budget>`.
+- **Board.** Run `python3 ${CLAUDE_PLUGIN_ROOT}/tools/concept_board.py .`. Render `concepts/index.html` to an image and **look at it** before the owner does: is the range real, is a statement flagged, are two concepts the same idea? Replace duplicates with a fresh lens call using a new deal (`--round 1b`).
+- **Without subagents** (e.g. claude.ai): ask the owner to run each lens in a fresh chat, or do one lens per turn without rereading the earlier turns. Say plainly that this is weaker.
 
-## 3. Critique (CR-CRITIC-1)
+## 3. Owner's hot / cold sort, then round two (CR-ROUND-1)
 
-Dispatch **one critic subagent that did not write the concepts**. Run it on a different model family from yours if one is available, for a less correlated view. Give it the concept board, the obvious list, `TASTE.md`, and these instructions:
+1. Show the owner every statement on one screen, and ask for **hot / cold / tell me more** on each: two minutes, no explanations needed. Log the result in `TASTE.md`.
+2. Run `deal.py . --round 2`. Dispatch **3–4 fresh subagents**. Each gets two parent concepts (statements, diagrams, gives-up), the owner's words about them, and one task:
+   - **cross**: A's parti with B's section;
+   - **purify**: A with everything removed except its idea;
+   - **invert**: what A gives up becomes what it's about.
+   They write `C-<NN>.yaml` with `round: 2` and `parents`, plus diagrams. Rebuild the board.
 
-> Score each concept 1–5 on originality (vs. the obvious list), coherence (does every part serve the idea), site fit, delight (is there a moment you'd remember), and taste fit (vs. TASTE.md). For each, name the boldest move, the weakest part, and what would make it more surprising while staying buildable. Flag any concept that is secretly one of the obvious answers. Do not judge code compliance; that comes later.
+## 4. Blind jury (CR-CRITIC-1)
 
-Write the scores into the board's critique table.
+Run `concept_board.py . --jury` to get `concepts/jury.md`, the blind pack with the obvious answers mixed in. Dispatch **four juror subagents in parallel**, each seeing only the pack and its own brief:
+- **owner's proxy**: give it only `TASTE.md`;
+- **provocative studio critic**;
+- **builder**: cost, buildability, weather;
+- **the site**: the neighbors, the street, the tree.
 
-## 4. Shortlist and owner review
+Each ranks the entries by pairwise comparison, names **one champion** and **one to kill** with reasons, and says what would make its champion more surprising while keeping it buildable. Map the IDs back with `concepts/jury-key.json`. **If any juror ranks an OBVIOUS entry above the concepts, the round failed.** Tell the owner, and rerun step 2 with new cards (`--round 3`). The shortlist is every concept with a champion, plus the owner proxy's top pick, usually 3–4 concepts.
 
-Shortlist **three**: the **strongest**, the **boldest**, and the **best fit to taste**. They may overlap, so fill any gap from the next-ranked concept. Present each one with:
+## 5. Walkthroughs and owner review (CR-WALK-1)
 
-- its statement and key move;
-- a diagram: an SVG from a generator, or a quick plan from `render_plan.py` on a rough spec;
-- what it gives up;
-- optionally a mood image (CR-ATMOS-1), labeled "AI-assisted concept".
+For each shortlisted concept, write three first-person walkthroughs of about 150 words: arriving with groceries in the rain, a winter morning, a party of twelve. Show the owner each concept's card (statement, diagrams, gives-up), its walkthroughs, the jurors' champion reasons and, optionally, one mood image labeled "AI-assisted concept" (CR-ATMOS-1). Ask what excites them, what worries them, and what they'd steal from another concept. **Log their reactions in their own words** in `TASTE.md`.
 
-Ask the owner to react, not just pick: what excites them, what worries them, what they'd steal from the others. **Log their reactions in `TASTE.md`'s reactions log, in their words** (CR-TASTE-1).
+## 6. Push, then record (CR-PUSH-1, CR-KEEP-1)
 
-## 5. Push, then record (CR-PUSH-1, CR-KEEP-1)
-
-1. Take the pick further than feels comfortable, by about 30% (scaled by the surprise dial): more of whatever the idea is. Show the pushed version next to the original, and let the owner choose how far to go.
+1. Show the pick as **pure / extreme / inverted**. For family concepts, run the generator at its parameter extremes. The dial sets which version you lead with, and the owner chooses.
 2. Record the result in `design.yaml`:
    ```yaml
    project:
-     concept: {status: chosen, id: C-0X, statement: "<one sentence>", board: CONCEPTS.md}
+     phase: schematic
+     concept:
+       status: chosen
+       id: C-07
+       statement: "<one sentence>"
+       key_move: "<one line>"
+       gives_up: "<one line>"
+       invariants:            # 3-5; dicts are checked automatically, strings are listed
+         - {all_rooms_touch: COURT}
+         - {glazing_share: {wall: S, min: 0.6}}
+         - "the entry is through the garden"
+       moments:
+         - "breakfast in the east corner of the court, low sun on the wall"
    ```
-3. Note the decision in `DECISIONS.md`, including what the concept gives up.
-4. Hand off to schematic design (playbook 07, Gate 2). From here on, the arch-design-playbook loop makes the design correct, and at every gate the concept statement must still be true (CR-KEEP-1).
+3. Log the decision in `DECISIONS.md`, including what the concept gives up. Add parked ideas the owner liked to `TASTE-PROFILE.md` one folder up (create it from `TASTE.md` if missing).
+4. Hand back to the arch-design-playbook loop (playbook 07, Gate 2). At every later gate, run a **blind read-back**: a fresh subagent sees only the current plan and a section, without the statement, and says in one sentence what the house is about. If the idea isn't recoverable, raise it with the owner.
 
 ## Don'ts
 
-- Don't generate concepts in one long reply. Separate contexts are the point (CR-LENS-1).
-- Don't apply room-size, kitchen or module rules during divergence (CR-HARD-1).
-- Don't present a style as a concept ("a modern farmhouse") or a feature list as an idea ("open plan with an island").
+- Don't generate concepts in one long reply, and don't give lenses each other's output (CR-LENS-1).
+- Don't paste fixed example lists into prompts. Deal cards instead (CR-SPECIFIC-1).
+- Don't apply room-size, kitchen, module, adjacency or style rules while exploring (CR-HARD-1).
+- Don't average scores. Champions carry bold work (CR-CRITIC-1).
 - Don't read dimensions off images (CR-ATMOS-1).
-- Don't skip the readiness conversation. The owner asked to be warned (CR-GATE-1).
+- Don't skip the readiness conversation: the owner asked to be warned (CR-GATE-1).

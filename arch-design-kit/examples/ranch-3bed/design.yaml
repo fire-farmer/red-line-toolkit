@@ -23,6 +23,14 @@ project:
     status: chosen
     id: C-03
     statement: "One long, low bar that splits family life from sleep, with every main room facing the south garden."
+    key_move: "Bedroom wings at both ends; the public middle opens south to the garden."
+    gives_up: "Some walking distance; the primary suite sits far from the kids' rooms."
+    invariants:
+      - {glazing_share: {wall: S, min: 0.5}}
+      - {room: GREAT, min_length_in: 288}
+      - "the two bedroom wings stay at opposite ends of the bar"
+    moments:
+      - "morning coffee at the great room's south windows"
   fuel_fired_appliances: false  # gas range/furnace/water heater -> CO alarm rules apply
   universal_design: true      # adds the playbook's aging-in-place checks
 

@@ -1,0 +1,122 @@
+project:
+  name: "Court house \xB7 none \xB7 V01"
+  units: in
+  phase: concept
+  area_budget_sqft: 1900
+  concept:
+    status: exploring
+    statement: Every room opens onto one walled garden at the center of the house.
+site:
+  lot_in:
+  - 840
+  - 1320
+  setbacks_in:
+    north: 300
+    south: 240
+    east: 72
+    west: 72
+  building_origin_in:
+  - 72
+  - 240
+levels:
+- id: L1
+  name: Main level
+  elevation_in: 0
+  ceiling_in: 108
+  rooms:
+  - id: GREAT
+    name: Great Room
+    type: living
+    rect:
+    - 0.0
+    - 0
+    - 300
+    - 168
+  - id: KITCHEN
+    name: Kitchen
+    type: kitchen
+    rect:
+    - 300.0
+    - 0
+    - 168
+    - 168
+  - id: PANTRY
+    name: Pantry
+    type: pantry
+    rect:
+    - 468.0
+    - 0
+    - 84.0
+    - 168
+  - id: BR2
+    name: Bedroom 2
+    type: bedroom
+    rect:
+    - 0.0
+    - 336
+    - 168
+    - 168
+  - id: BATH2
+    name: Bath 2
+    type: bath
+    rect:
+    - 168.0
+    - 336
+    - 96
+    - 168
+  - id: BR3
+    name: Bedroom 3
+    type: bedroom
+    rect:
+    - 264.0
+    - 336
+    - 168
+    - 168
+  - id: LINEN
+    name: Linen
+    type: closet
+    rect:
+    - 432.0
+    - 336
+    - 120.0
+    - 168
+  - id: ENTRY
+    name: Entry
+    type: foyer
+    rect:
+    - 0
+    - 168.0
+    - 168
+    - 72
+  - id: MUD
+    name: Mud / Laundry
+    type: laundry
+    rect:
+    - 0
+    - 240.0
+    - 168
+    - 96.0
+  - id: BRP
+    name: Primary Bedroom
+    type: bedroom
+    rect:
+    - 384
+    - 168.0
+    - 168
+    - 96
+  - id: BATHP
+    name: Primary Bath
+    type: bath
+    rect:
+    - 384
+    - 264.0
+    - 168
+    - 72.0
+  - id: COURT
+    name: Court
+    type: court
+    rect:
+    - 168
+    - 168
+    - 216
+    - 168
