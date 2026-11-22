@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseClosedPhases } from '../lib/anchors.mjs';
 import { parseFus, parseTrigger } from '../lib/rows.mjs';
-import { anchoredRows, heaviest, groupSteps, countMatches, checkTrigger, evaluateFus } from '../lib/fus.mjs';
+import { anchoredRows, heaviest, groupSteps, countMatches, checkTrigger, evaluateFus, untrackedPlanFus } from '../lib/fus.mjs';
 import { fu } from './helpers/ledger-fixture.mjs';
 
 const stackRows = (lines) => parseFus(lines, 'stack');
@@ -146,9 +146,32 @@ test('an unscheduled group step idle for 10 sessions asks once per 10-session wi
   assert.doesNotMatch(at(20, scheduled), /untouched/);
 });
 
-test('a group step mixing types is a warning', () => {
+test('a group step mixing types is no warning (retired under R-26, 2026-11-18): the group keeps both types for the report', () => {
   const out = evaluate({ stack: stackRows([fu(1, 'DesignRevamp/7.11', 'security', 'cleanup-light'), fu(2, 'DesignRevamp/7.11', 'perf', 'change-heavy')]) });
-  assert.match(out.warnings.join('\n'), /DesignRevamp\/7\.11 mixes types: perf, security/);
+  assert.deepEqual(out.warnings, []);
+  assert.deepEqual([...out.groups[0].types].sort(), ['perf', 'security']);
+});
+
+test('an FU a plan doc names is untracked only with no row, no FU-Closed footer and no close before footers; each predicate alone keeps it quiet', () => {
+  const docs = [
+    { file: 'docs/campaign.md', ids: new Set(['FU-12', 'FU-3']) },
+    { file: 'docs/code.md', ids: new Set(['FU-12', 'FU-40', 'FU-41', 'FU-7', 'FU-1']) },
+  ];
+  const none = { listed: new Set(), closed: new Set(), preFooter: () => false };
+  assert.deepEqual(untrackedPlanFus({ docs, ...none }).untracked, [
+    { id: 'FU-1', files: ['docs/code.md'] },
+    { id: 'FU-3', files: ['docs/campaign.md'] },
+    { id: 'FU-7', files: ['docs/code.md'] },
+    { id: 'FU-12', files: ['docs/campaign.md', 'docs/code.md'] },
+    { id: 'FU-40', files: ['docs/code.md'] },
+    { id: 'FU-41', files: ['docs/code.md'] },
+  ]);
+  const ids = (input) => untrackedPlanFus({ docs, ...none, ...input }).untracked.map((u) => u.id);
+  assert.deepEqual(ids({ listed: new Set(['FU-12']) }), ['FU-1', 'FU-3', 'FU-7', 'FU-40', 'FU-41']);
+  assert.deepEqual(ids({ closed: new Set(['FU-40']) }), ['FU-1', 'FU-3', 'FU-7', 'FU-12', 'FU-41']);
+  assert.deepEqual(ids({ preFooter: (id) => id === 'FU-3' }), ['FU-1', 'FU-7', 'FU-12', 'FU-40', 'FU-41']);
+  assert.equal(untrackedPlanFus({ docs, ...none, listed: new Set(['FU-12']) }).named, 6);
+  assert.deepEqual(untrackedPlanFus({ docs: [], ...none }), { named: 0, untracked: [] });
 });
 
 test('a fired Standing trigger proposes an open group step for its type, never a closed one; an owner question waits', () => {

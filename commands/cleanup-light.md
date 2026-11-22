@@ -1,7 +1,7 @@
 ---
 description: The standard pipeline for any change outside the project's Heavy-rigor trigger — an FU, a whole group step, or a named task, at any file count. A PLAN block with a Reuses line and a Fable plan critique for 3+ file, new-abstraction or styling work, stack skills loaded for the surfaces touched, then a critic panel the diff picks, with a Fable audit beside it on every run — one prose critic for a diff of only prose and tests; otherwise scope + code-reviewer critics and security, simplifier, silent-failure, type-design and test-coverage critics on their triggers — adjudication, verify, a Fable re-audit of the fixes, the pre-commit audit, then a local commit and a report. Hands the work to /change-heavy when the change meets the project's Heavy-rigor trigger.
 argument-hint: '[optional <fu-id> [<fu-id> …] | <group step, e.g. Campaign/2.3> | "<named task>" — else the top open FU by severity]'
-allowed-tools: Read, Edit, Write, Bash, Agent, Skill
+allowed-tools: Read, Edit, Write, Bash, Agent, Skill, mcp__Claude_Browser__preview_start, mcp__Claude_Browser__navigate, mcp__Claude_Browser__resize_window, mcp__Claude_Browser__javascript_tool, mcp__Claude_Browser__computer
 disallowed-tools: AskUserQuestion
 ---
 
@@ -35,8 +35,8 @@ Migrated projects (`LEDGER: migrated`): file and close FUs per `${CLAUDE_PLUGIN_
 - **Load the stack skills for the surfaces the work touches** (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Stack skills) before writing the PLAN, or before Stage 2 when Stage 1.7 is skipped.
 
 **Pre-flight gate (`${CLAUDE_PLUGIN_ROOT}/reference/prompting-cheatsheet.md` § Pre-Flight Scope Check):**
-1. **Rigor check** (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The rigor trigger): test what the work alters, not where it sits. Under a criteria trigger, a label, copy, layout or styling change inside a high-risk area meets none of them and stays here; a project whose CLAUDE.md states its trigger by area or by file count is decided by that. If the work meets the trigger, hand it to `/change-heavy` without asking (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`): invoke it via the Skill tool with the work as its argument (the FU it picked, when none was named) and name the item that met the trigger.
-2. **Risk surface check:** Does this touch RLS / auth / Stripe / exports / financial calc? If yes, mark security-asymmetric upgrade as active for Stage 4. Whether Stage 3c runs is decided on the written diff (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel).
+1. **Rigor check** (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The rigor trigger): test what the work alters, not where it sits. Under a criteria trigger, a label, copy, layout or styling change inside a high-risk area meets none of them and stays here; a project whose CLAUDE.md states its trigger by area or by file count is decided by that. If the work meets the trigger, hand it to `/change-heavy` without asking (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`): invoke it via the Skill tool with the work as its argument (the FU it picked, when none was named) and name the item that met the trigger. Planning from a locked design always goes there (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design).
+2. **Risk surface check:** Does this touch RLS / auth / Stripe / exports / financial calc? If yes, mark security-asymmetric upgrade as active for Stage 4. Whether Stage 3c runs is decided on the written diff, and a design build always runs it (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel).
 3. **Existing-primitive check:** Note any primitive families the fix might touch — flag if creating new when reuse fits. This feeds the Stage 1.7 **Reuses** line.
 
 **Quick-lane check**, after the gate: when every entry condition of § The quick lane holds, take it; otherwise go on to Stage 1.5.
@@ -49,13 +49,13 @@ A fast path inside this pipeline, not a pipeline anyone picks. Stage 1 takes it 
 - it changes nothing beyond the named fix;
 - it meets nothing in the Heavy-rigor trigger (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The rigor trigger);
 - it touches no risk path (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Risk paths) and no code file that handles auth, RLS, Stripe, exports or money math, so it needs no security pass;
-- it involves no design or copy choice that's the owner's;
+- it involves no design or copy choice that's the owner's, and isn't a step that builds from a locked design (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design);
 - an existing test or check already covers the behaviour it changes.
 
 The lane:
 1. For an FU, check its claim against live code first (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § FU body verification, scope-proportionate); a wrong premise closes it validated-no-action (Done, state 2).
 2. Make the edit, then run the anchor sweep (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The anchor sweep): a listed row that's already done closes, one its Closed outcome makes this run's to fix outgrows the lane, and one it leaves open stays open with its reason.
-3. Run the affected tests and seat 3h's Fable audit once over the diff, at the effort the lane states before dispatching (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort), and fix what it finds. No other critic runs and no Adjudicator.
+3. Run the affected tests, the browser specs the diff reaches included (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Browser specs), and seat 3h's Fable audit once over the diff, at the effort the lane states before dispatching (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort), and fix what it finds. No other critic runs and no Adjudicator.
 4. Verify as the project's CLAUDE.md requires before any commit (its pre-commit hook and its build check), plus lint on the changed files; where the project has no hook, its typecheck and full test suite before the commit.
 5. Commit by explicit pathspec, closing each FU per `${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs (its row deleted and `FU-Closed: FU-<n>` on the commit; a legacy project moves the row to its completed log).
 6. Report in one line: the fix, the tests run, Fable's verdict and effort, the anchor sweep's line (or why it didn't run, in a project that isn't migrated) and the commit hash, plus the rendered before and after for a visual change. The Done telemetry row carries `"stage":"quick"`, its Adjudicator fields at 0 and `critics` holding only `fable-decorrelation`; the fable-audit row is emitted with `plan_findings` -1 and `reaudit` `n-a`.
@@ -70,7 +70,7 @@ Skipped for a named task (no FU body). Run `${CLAUDE_PLUGIN_ROOT}/reference/pipe
 
 ### Stage 1.7 — PLAN + Fable plan critique (when the change touches 3+ files, introduces a new abstraction, or adds or changes a CSS class, a token or a shared component)
 
-Skip this stage for a 1–2 file change that introduces no new abstraction and adds or changes no CSS class, token or shared component; that run sets its dispatch efforts before its first dispatch (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort). Otherwise:
+Work from a locked design never skips this stage, and its PLAN carries its part's share of the plan contents `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design lists, with the code plan's and mockup's paths. Skip it for any other 1–2 file change that introduces no new abstraction and adds or changes no CSS class, token or shared component; that run sets its dispatch efforts before its first dispatch (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort). Otherwise:
 
 1. **Write a `PLAN` block in chat** (no plan document), in the CLAUDE.md "Default workflow" shape: Problem, Approach, Assumptions, **Reuses**, Scope, Risks, Verify, **Effort**. The **Reuses** line is required. It names the existing class, token or component the change reuses, or reads `New: <name> — nothing existing fits because <reason>`. The **Effort** line sets the effort of every agent this run dispatches, this stage's critique included (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort).
    The block follows `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Claim discipline; a load-bearing claim you haven't checked is marked `UNVERIFIED` in it, and the Fable plan critique treats an unmarked one as a finding.
@@ -89,7 +89,9 @@ Skip this stage for a 1–2 file change that introduces no new abstraction and a
 Make the change against the plan (or the stated scope, when Stage 1.7 was skipped). Anything you notice is a review leftover and passes the filing bar (`${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs — read it before filing: a row needs **both** a named reason **and** a pass of the 2-week filter), and none goes silently into the diff:
 - **The same class as this change** (the same defect or the same fix at another site): fix it in this change and say so in the report. This is the default (R-20).
 - **A real issue in the area this change works** (the same feature, flow or files; `${CLAUDE_PLUGIN_ROOT}/reference/ledger-session.md` § FUs says what counts): fix it in this change, whatever its class, and list it with the minor tweaks in the report, the commit body and every Stage 3 prompt. A **minor tweak**, a few lines in a file this change already touches, is the smallest case; a larger one joins the PLAN and hands the run to `/change-heavy` when it meets the Heavy-rigor trigger. One that's genuinely the owner's call is parked instead.
-- **Otherwise:** file it only when it's in a completely separate area or the owner's call: it passes the 2-week filter and has a named reason it can't be done now (a product decision, or, outside the area, a real risk, an abstraction decision or its own run), written as the row's `why not now`. If not, drop it, with one line in the commit body. `ledger.mjs audit` stops on a row filed in the area unless its reason is `product` or it's an owner decision.
+- **Otherwise:** file it only when it's in a completely separate area or the owner's call: it passes the 2-week filter and has a named reason it can't be done now (a product decision, or, outside the area, a real risk, an abstraction decision or its own run), written as the row's `why not now`. If not, drop it, with one line in the commit body. `ledger.mjs audit` stops on a row filed in the area unless its reason is `product`, it's an owner decision or it's a `/module-audit` fix-plan group's row, which its plan schedules.
+
+**Work from a locked design** writes the characterization test, the browser-spec cases and the build matched to the mockup, then runs the verify gates of `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design before Stage 3, so the panel reviews what they fixed.
 
 **Anchor sweep.** Once the change is written, run `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The anchor sweep: close each FU it lists that qualifies, and carry the rest into the report.
 
@@ -116,7 +118,7 @@ Run the trigger snippet in `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` 
 
 **Conditional:**
 
-- **Critic 3c — `/security-review`**, when `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel's security rule holds for the diff. Invoke it via the Skill tool on the current branch's staged + unstaged changes and capture its output as Critic 3c's findings.
+- **Critic 3c — `/security-review`**, on every run of work from a locked design (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design), and otherwise when `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel's security rule holds for the diff. Invoke it via the Skill tool on the current branch's staged + unstaged changes and capture its output as Critic 3c's findings.
 
 - **Critic 3d — simplifier critic** (only if diff > 5 lines):
   > *"Review this implementation for dead code, redundant checks, over-abstraction, defensive checks for impossible conditions, comments that restate code, orphaned imports/exports. Files changed: [list]. Output: `file:line — severity — issue — recommendation`."*
@@ -139,6 +141,8 @@ Each specialist prompt carries the same scope line, because a specialist reading
 - **Seat 3h — Fable decorrelation audit (no skip gate)**, a `fable-seat` subagent (`subagent_type: red-line-toolkit:fable-seat`, **`model: fable`**, or `model: opus` if the orchestrator is Fable; `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The Fable seats, whose model check it gets):
   > *"Decorrelated audit of this diff (`git diff HEAD`, plus staged). The intended change is: `<one-line intended behavior delta, or 'none — this change should preserve all behavior'>`, plus these minor tweaks and in-area fixes: `<the Stage 2 list, or none>`<; the PLAN was: <paste the Stage 1.7 PLAN block, when it ran>>. You did not write this — audit with fresh priors. Find (1) any observable behavior change OTHER than that intended delta: a dropped branch, a silently altered value, a missed dynamic reference (template-built class names included), a coercion shift; and (2) duplication: for every new CSS class, custom property, color-mix recipe or inline style object in the diff, search the project's stylesheets and components for an existing equivalent and flag near-duplicates, naming the existing one. If a defect class in this diff will recur and nothing checks for it, say so and recommend a check (what it would catch) — a recommendation, not a finding. Do NOT review security (Stage 3c covers that) and do NOT restyle. Output `file:line — severity — issue — rationale`, or `CLEAN`."*
 
+For work from a locked design, seat 3h's prompt and every critic's carry the code plan's and mockup's paths, and seat 3h audits with `/change-heavy` Stage 6's lens: correctness, data integrity, logic, silent changes against the plan, accessibility and duplication (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design).
+
 Collect all critic outputs into a structured block for the Adjudicator. Label each critic's block with its id: `prose`, `scope`, `code-reviewer`, `security-review`, `simplifier`, `silent-failure-hunter`, `type-design-analyzer`, `pr-test-analyzer`, `fable-decorrelation`. Label every finding line and mark same-site duplicates before dispatching (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel, the per-critic tally), e.g. `[simplifier] src/x.ts:12 — …`, so the Adjudicator's numbered verdicts still carry their source.
 
 ---
@@ -149,7 +153,7 @@ Dispatch The Adjudicator (`red-line-toolkit:the-adjudicator`) via the Agent tool
 
 **Tally per critic** from the verdicts, for the telemetry `critics` field (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel).
 
-Absorb every KEEP and MODIFY verdict without asking (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`; a file a fix creates is marked intent-to-add, `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel) and list the verdicts in the report, ditched ones included, so the owner can pull one back. A verdict that would change what a user sees beyond the plan, or reverse a ruling the owner made, is tier 3: park that one and absorb the rest. A verdict that diagnoses the Heavy-rigor trigger hands the work to `/change-heavy`; one that finds the plan's premise off sends the run back to Stage 1.7, and a second consecutive replan halts and reports. A recommended check is filed or dropped under the filing bar, not built in this run. A KEEP that would undo the intended change or a listed minor tweak or in-area fix is ditched, with the reason in the report.
+Absorb every KEEP and MODIFY verdict without asking (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`; a file a fix creates is marked intent-to-add, `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel) and list the verdicts in the report, ditched ones included, so the owner can pull one back. A verdict that the design itself is wrong is parked, as the Kick-backs of `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design say. A verdict that would change what a user sees beyond the plan, or reverse a ruling the owner made, is tier 3: park that one and absorb the rest. A verdict that diagnoses the Heavy-rigor trigger hands the work to `/change-heavy`; one that finds the plan's premise off sends the run back to Stage 1.7, and a second consecutive replan halts and reports. A recommended check is filed or dropped under the filing bar, not built in this run. A KEEP that would undo the intended change or a listed minor tweak or in-area fix is ditched, with the reason in the report.
 
 ---
 
@@ -161,6 +165,8 @@ Apply selected verdicts to the implementation. Run `npm run build`:
 
 Verify lint count preserved or improved (per CLAUDE.md).
 
+Run the browser specs the diff reaches (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Browser specs); a failing case is fixed within Stage 5 like a failed build. Work from a locked design re-runs the verify gates of `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design here, after the fixes.
+
 If the diff touches `supabase/` schema or RLS, follow `${CLAUDE_PLUGIN_ROOT}/reference/supabase-local.md`: in an adopted project, apply it on the local stack and pass `npm run test:rls`; otherwise use its before-adoption path and say so in the report. `/change-heavy` Stage 1 carries the same pointer.
 
 ---
@@ -171,7 +177,7 @@ A prose diff whose post-review fixes were small skips this stage (`${CLAUDE_PLUG
 
 Dispatch **one** Fable re-audit of the corrected diff as a `fable-seat` subagent (`subagent_type: red-line-toolkit:fable-seat`), on the family seat 3h ran on. **Pass the findings you fixed** so the re-audit is anchored (a fresh subagent can't confirm a fix holds without knowing the defect):
 
-> *"Re-audit this corrected diff. The findings just fixed were: `<paste the verbatim KEEP/MODIFY findings absorbed at Stage 4, less the [security-review] ones, and any Stage 5 build fix>`. Confirm each fix holds at the root and introduced no new observable change. Same lens as the audit; NOT security. Output findings or `CLEAN`."*
+> *"Re-audit this corrected diff. The findings just fixed were: `<paste the verbatim KEEP/MODIFY findings absorbed at Stage 4, less the [security-review] ones, and any Stage 5 build, browser-spec or design-gate fix>`. Confirm each fix holds at the root and introduced no new observable change. Same lens as the audit; NOT security. Output findings or `CLEAN`."*
 
 - **CLEAN** → proceed to Stage 6 (`reaudit_findings` 0).
 - **A finding that restates the intended fix or names no defect** → dismiss it. It counts in `reaudit_findings`, not `reaudit_kept`; a finding that is fixed or sends the run back to its plan counts in both.
@@ -217,22 +223,23 @@ Summarize which state applies, plus:
 - Critic yield: **raised / kept / unique** per critic that ran, the panel (prose or full), the specialists (3e–3g) that fired, and the file that engaged 3c when no risk path did
 - Stack skills loaded at Stage 1 (or none)
 - Effort per dispatch, next to its model (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Models and effort)
-- Build / lint status (npm run build pass/fail; lint count delta vs baseline)
+- Build / lint / browser-spec status (npm run build pass/fail; lint count delta vs baseline; the specs the diff reached: cases passed, flaky, checked by hand, or not run and why)
 - Seat 3h Fable audit: **N findings (M duplication)**, any recommended check with its filing-bar outcome — and the Stage 5.5 re-audit: **clean / N new findings (K kept) / n-a / prose-skip (a prose diff, N lines fixed)**
 - STACK.md update status (FU(s) closed / left open with a named reason / revised — and any FU filed under the filing bar)
 - Stage 7 pre-commit audit verdict per check: **Truth: ✅/⚠️/❌ / Scope: ✅/⚠️/❌ / Follow-ups: ✅/⚠️/❌** — or "skipped — validated-no-action"
+- Work from a locked design: the Report lines of `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design (each gate's result, `n/a` with why; the `/mobile-audit <page>` recommendation; kick-backs and plan amendments; the plan marked resolved)
 - Owner items parked: each row ID with its question, or none
 - Commit: the Stage 7 hash
 
 **Effectiveness telemetry — append on every completed run.** Via Bash, append one JSON line to `~/.claude/metrics.jsonl` (append-only; create if absent). Skip on validated-no-action / abandon closes (nothing shipped).
 
 ```bash
-echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"cleanup-light\",\"outcome\":\"completed\",\"rigor\":\"light\",\"stage\":\"4\",\"files_changed\":<n>,\"keep\":<k>,\"ditch\":<d>,\"modify\":<m>,\"net_actionable\":<adjudicator Net-actionable count>,\"missed\":<adjudicator MISSED count, 0-3>,\"security_engaged\":<true|false>,\"input\":\"<fu|group|task>\",\"fus_closed\":<n>,\"leftovers\":{\"fixed\":<n>,\"filed\":<n>,\"dropped\":<n>,\"tweaks\":<n>},\"owner_parked\":<n>,\"swept\":{\"listed\":<n>,\"closed\":<n>},\"critics\":{\"<critic-id>\":{\"raised\":<n>,\"kept\":<n>,\"unique\":<n>}}}" >> ~/.claude/metrics.jsonl
+echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"cleanup-light\",\"outcome\":\"completed\",\"rigor\":\"light\",\"stage\":\"4\",\"files_changed\":<n>,\"keep\":<k>,\"ditch\":<d>,\"modify\":<m>,\"net_actionable\":<adjudicator Net-actionable count>,\"missed\":<adjudicator MISSED count, 0-3>,\"security_engaged\":<true|false>,\"input\":\"<fu|group|task>\",\"design\":<true|false>,\"fus_closed\":<n>,\"leftovers\":{\"fixed\":<n>,\"filed\":<n>,\"dropped\":<n>,\"tweaks\":<n>},\"owner_parked\":<n>,\"swept\":{\"listed\":<n>,\"closed\":<n>},\"critics\":{\"<critic-id>\":{\"raised\":<n>,\"kept\":<n>,\"unique\":<n>}}}" >> ~/.claude/metrics.jsonl
 ```
 
-`keep/ditch/modify/net_actionable/missed` come from the Stage 4 verdict block; `security_engaged` is whether Stage 3c ran; `input` is the Stage 1 input kind; `fus_closed` counts the FU rows this run closed (for a named task, only the anchor sweep's); `leftovers` counts the filing-bar outcomes as the Done summary lists them, minor tweaks and in-area fixes under `fixed` and again in `tweaks`; `owner_parked` counts the `owner decision` rows parked (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` § Parking); `swept` counts the FUs the anchor sweep listed and closed (also in `fus_closed`, never in `leftovers`); `critics` holds one entry per Stage 3 block that ran, `fable-decorrelation` included, with the per-critic tally (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel). A `pipeline:"process-change"` row in the metrics file marks where a field begins or changes meaning.
+`keep/ditch/modify/net_actionable/missed` come from the Stage 4 verdict block; `security_engaged` is whether Stage 3c ran; `input` is the Stage 1 input kind; `design` is whether the work built from a locked design (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design); `fus_closed` counts the FU rows this run closed (for a named task, only the anchor sweep's); `leftovers` counts the filing-bar outcomes as the Done summary lists them, minor tweaks and in-area fixes under `fixed` and again in `tweaks`; `owner_parked` counts the `owner decision` rows parked (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` § Parking); `swept` counts the FUs the anchor sweep listed and closed (also in `fus_closed`, never in `leftovers`); `critics` holds one entry per Stage 3 block that ran, `fable-decorrelation` included, with the per-critic tally (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The review panel). A `pipeline:"process-change"` row in the metrics file marks where a field begins or changes meaning.
 
-**Adjudicator telemetry — append the same run** (only when Stage 4 adjudicated), with the field set `/change-heavy` and `/page-implement` use, which the cross-caller readout aggregates:
+**Adjudicator telemetry — append the same run** (only when Stage 4 adjudicated), with the field set `/change-heavy` uses, which the cross-caller readout aggregates:
 
 ```bash
 echo "{\"ts\":\"$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S%z)\",\"pipeline\":\"adjudicator\",\"outcome\":\"<completed|abandoned>\",\"caller\":\"cleanup-light\",\"stage\":\"4\",\"keep\":<k>,\"ditch\":<d>,\"modify\":<m>,\"net_actionable\":<adjudicator Net-actionable count>,\"missed\":<adjudicator MISSED count, 0-3>}" >> ~/.claude/metrics.jsonl

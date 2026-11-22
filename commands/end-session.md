@@ -1,7 +1,7 @@
 ---
 description: End-of-session sync. Writes the handoff INTO STACK.md Current location (no separate file), runs the lessons audit + promotion, surfaces + clusters new FUs, GC's FUs homed at any just-closed phase (verify gate blocks a close that leaves orphans), verifies working tree, commits with an address-tagged subject. Git history is the forensic trail. Invoke at session end or when context runs low.
 argument-hint: "[optional]"
-allowed-tools: Read, Write, Edit, Bash, Skill
+allowed-tools: Read, Write, Edit, Bash, Agent
 disallowed-tools: AskUserQuestion
 ---
 
@@ -32,7 +32,7 @@ If working tree is clean → proceed to Stage 2.
 If dirty and every dirty path is already named as intentional WIP in Current location's Pending → proceed without asking (tier 1, `${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md`), say so in one line, and never stage those paths.
 
 Otherwise decide without asking (tier 1) and name every unexplained path in the Stage 9 report:
-- **This session's own uncommitted work** → commit it first, through `/pre-commit-check`; when it's intentional work in progress, record it in Current location's "Pending" field instead.
+- **This session's own uncommitted work** → commit it first, auditing the commit with `/pre-commit-check` in a subagent (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The pre-commit audit); when it's intentional work in progress, record it in Current location's "Pending" field instead.
 - **Anything else** (another author's work in progress) → record it in Current location's "Pending" field and never stage it. Never stash it.
 
 Never proceed silently past an unexplained dirty tree.
@@ -104,7 +104,7 @@ If none closed → Lessons audit is optional this session (note for user).
 - Lessons forcing-function: EVERY in-force lesson must resolve to promote / carry-forward / drop (Stage 6c handles promotion).
 - FU GC: every phase-local FU homed in the closing campaign must resolve / re-target / promote-to-Standing-FUs.
 - Global-doc update: append the closed campaign's git range (`git log --oneline <first>..<last>`) + 1-para synopsis to `docs/plans/<YYYY-MM-DD>-refactor-overview.md`.
-- Current location re-points to the next campaign's first Phase.
+- Current location re-points to the next campaign's first Phase, and STACK's Global plan to that campaign's doc.
 - Stage 8's `/code-review ultra` reminder, when the campaign was built on a branch other than the default branch.
 
 ---
@@ -160,7 +160,7 @@ Decide from the session's record what surfaced that needs tracking. Then route e
   - `home` = fully-qualified address `<Campaign>/<Phase>.<Step>` (e.g. `Sweep/1.1` → STACK phase-local) or `Standing` (→ Standing-FUs.md)
   - `anchor` = machine-verifiable citation: `{anchor: src/lib/x.ts :: /PATTERN/}` (`/.../` = always regex; the pattern must not contain `/`), a bare literal, or `{anchor: manual}` for architectural/absence FUs. New rows SHOULD anchor — `ledger.mjs audit` (migrated) or `npm run verify:fus` (legacy) flags drift.
 
-**Then cluster (the batch-readiness report):** group this session's new FUs (+ optionally re-scan existing) by `type`. For each type-cluster, report the count and batch-readiness: *"type-design now ×9 → /cleanup-light batch-ready; silent-failure ×4 (alters an auth path) → /change-heavy."* (2 or more same-type is a batch; its pipeline is the project's Heavy-rigor trigger, not its size.) This is the lightweight inline version of `/cluster-fus` — surfaces batches forming so cleanup stays tractable.
+**Then cluster (the batch-readiness report):** group this session's new FUs (+ optionally re-scan existing) by `type`. For each type-cluster, report the count and batch-readiness: *"type-design now ×9 → /cleanup-light batch-ready; silent-failure ×4 (alters an auth path) → /change-heavy."* (2 or more same-type is a batch; its pipeline is the project's Heavy-rigor trigger, not its size.) It surfaces batches as they form, so cleanup stays tractable; `/start-session full` lists every batch's members.
 
 **6e. Recommendation-calibration review.** Read the repository's own `memory/recommendation-calibration.md` when the repo root has one (a repo-local log, not your auto-memory); otherwise read the shared `~/.claude/data/recommendation-calibration.md`. If this session produced any recommendation flips (I recommended an option, the owner questioned it, the rec changed), append one row each, to the log you read, with a root-cause tag. Then scan unreviewed rows: if ≥3 share a miscalibration tag (`scope-reflex-overdefer` / `under-weighted-evidence` / `risk-aversion`) → propose hardening the scope-calibration rule (rulebook rule R-20); if any `gold-plating-overcorrect` → propose relaxing it back toward the YAGNI guard; if `genuine-new-info` dominates → calibration is fine, mark reviewed. Lightweight — skip silently if the log gained no new rows this session.
 
@@ -171,6 +171,7 @@ Decide from the session's record what surfaced that needs tracking. Then route e
 Edit STACK.md with all changes collected in Stages 4–6:
 
 - Current location's 4 fields refreshed
+- A proposed campaign opened: when `docs/plans/` holds a campaign doc with `status: proposed` and a `- **Locked code plan:**` line, which a planning run's planned close leaves, write its STACK entry and flip it to `status: active` as `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § Building from a locked design (The planned close) says
 - New In-force lessons appended with `[audits survived: 0]`
 - Survived In-force lessons: increment `[audits survived: N]`
 - Retired lessons moved from In force → Archive
@@ -231,7 +232,7 @@ There is **no separate handoff file.** Stage 7 wrote the full handoff into STACK
 
 Commit without asking (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` § The report): stage what changed and commit with an **address-tagged subject** (makes the forensic trail greppable), then report every decision the sync made — evidence footers, lessons filed or picked, promotions, FUs filed and closed, ledger choices, unexplained dirty paths — with the commit hash:
 
-- Stage: `STACK.md` + `Standing-FUs.md` (+ the `memory/feedback_*.md` file if Stage 6c promoted a lesson; + the global doc if a campaign-close updated it; + `docs/checks.md` and the files of each check its check review merged or retired).
+- Stage: `STACK.md` + `Standing-FUs.md` (+ the `memory/feedback_*.md` file if Stage 6c promoted a lesson; + the global doc if a campaign-close updated it; + `docs/checks.md` and the files of each check its check review merged or retired; + the campaign doc Stage 7 opened).
 - Commit:
   ```
   chore(stack): end-session sync — <Campaign>/<Phase> (<session n/m if known>)
@@ -250,8 +251,8 @@ Commit without asking (`${CLAUDE_PLUGIN_ROOT}/reference/decision-gates.md` § Th
 
 | Situation | Handling |
 |---|---|
-| STACK.md doesn't exist | Halt. Suggest creating one or running /module-build to start a new effort. |
-| STACK is empty (between major efforts) | Output: "No active stack. Run /module-build to start the next effort." |
+| STACK.md doesn't exist | Halt. Suggest creating one, or, for a new module, its design spec (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § A module's design spec). |
+| STACK is empty (between major efforts) | Output: "No active stack. The next module starts with its design spec (`${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § A module's design spec)." |
 | Dirty paths that are neither this session's nor named in Pending | Recorded in Pending, never staged, named in the Stage 9 report. |
 | Multi-session divergence | Reconciled into Current location; the commits are named in the Stage 9 report. |
 | The owner declines a parked memory promotion | Leave the lesson In force with its audit count. Re-surface it at the next audit. |

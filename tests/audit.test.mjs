@@ -5,8 +5,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { RULES } from '../lib/rules.mjs';
 import { auditProject, nextRuleId } from '../lib/audit.mjs';
+import { formatReport } from '../lib/format.mjs';
 import { LESSON_ROW_ID, fileHistory, listedSince } from '../lib/history.mjs';
 import { CO, PLAN, STANDING, addSyncs, fu, lesson, makeLedgerProject, referenceText, stackText } from './helpers/ledger-fixture.mjs';
+import { makeRepo } from './helpers/git-fixture.mjs';
+import { read } from './helpers/process-docs.mjs';
 
 const rulebookText = (rules) => `# Rulebook\n\n## Rules\n\n${rules.join('\n')}\n`;
 
@@ -246,6 +249,95 @@ test('an FU-Closed footer for a listed row stops until the row is removed', (t) 
   assert.deepEqual(audit().stops, []);
 });
 
+// The warning the plan-prose check gives an FU that lost its row.
+const planFuWarning = (id, files) => `${id} is named in ${files} but has no STACK or Standing row and no FU-Closed footer — an FU kept in plan prose keeps its row: restore the row, close it with FU-Closed, or, if it was dropped on purpose, take its ID out of the plan (red-line-toolkit/reference/ledger-session.md § FUs)`;
+const planFuWarnings = (r) => r.warnings.filter((w) => /plan prose|plan-prose/.test(w));
+
+test("an FU the campaign's plan docs name needs a row or an FU-Closed footer: each pointer doc and its Spec, Locked design and Locked code plan links are read, other plans are not", (t) => {
+  const { repo, audit } = setup(t);
+  // FU-7 is filed and then closed with a footer, as a run closes one.
+  repo.commit('docs(stack): file FU-7\n', { 'STACK.md': stackText({ fus: [1, 2, 3, 4, 5, 7].map((n) => fu(n)) }) });
+  repo.commit(`fix: thing 7\n\nDone.\n\nFU-Closed: FU-7\n${CO}\n`, { 'STACK.md': stackText() });
+  repo.write('docs/plan.md', [
+    '- Spec: [the spec](spec.md) (rev 2).',
+    '- **Locked design:** [design](../design/missing.md "the design").',
+    '- Locked code plan: [code](plans/code.md#p1), whose phases are this campaign\'s.',
+    '* Spec: [elsewhere](https://example.invalid/spec.md)',
+    'Wave 2 runs FU-1.', '', PLAN,
+  ].join('\n'));
+  repo.write('docs/spec.md', 'No FUs here.\n');
+  // One level of links: code.md's own Spec: line isn't followed, so old-plan.md's FU-50 stays unread.
+  repo.write('docs/plans/code.md', '- Spec: [old](../old-plan.md)\nFU-1 stays a row. FU-7 closed. FU-9/10 and FU-13–14 fold into this row (FU-9 again). FU-6 is Standing.\n> FU-30 is a quoted example.\n');
+  repo.write('docs/old-plan.md', 'FU-50 closed long ago.\n');
+  const r = audit();
+  assert.deepEqual(r.stops, []);
+  assert.deepEqual(planFuWarnings(r), [
+    "docs/plan.md's Locked design: line links ../design/missing.md, which is not a readable file — the plan-prose FU check can't read it",
+    "docs/plan.md's Spec: line links no local doc — the plan-prose FU check reads only a [title](path) link",
+    planFuWarning('FU-9', 'docs/plans/code.md'),
+    planFuWarning('FU-10', 'docs/plans/code.md'),
+    planFuWarning('FU-13', 'docs/plans/code.md'),
+    planFuWarning('FU-14', 'docs/plans/code.md'),
+  ]);
+  assert.deepEqual(r.planProse, { docs: 3, named: 7, untracked: 4 });
+  assert.match(formatReport(r), /^PLAN PROSE {2}3 plan docs · 7 FU IDs named · 4 untracked$/m);
+  assert.match(formatReport({ ...r, planProse: { docs: 1, named: 1, untracked: 0 } }), /^PLAN PROSE {2}1 plan doc · 1 FU ID named · 0 untracked$/m);
+  // An ID a plan doc names was issued: closing it with a footer is no unknown ID, and next-id passes it, a quoted one too.
+  assert.equal(r.nextIds.fu, 'FU-31');
+  // A slash tail and a range's inside are issued too, as the check reads them.
+  repo.commit(`fix: things 9, 10 and 13\n\nDone.\n\nFU-Closed: FU-9\nFU-Closed: FU-10\nFU-Closed: FU-13\n${CO}\n`, { 'b.txt': '9' });
+  const closedThree = audit();
+  assert.deepEqual(closedThree.warnings.filter((w) => /unknown ID/.test(w)), []);
+  assert.deepEqual(planFuWarnings(closedThree).filter((w) => /^FU-/.test(w)), [planFuWarning('FU-14', 'docs/plans/code.md')]);
+  // Restored as a row, FU-14 is tracked again; the pointer doc's own mention counts as much as a linked doc's.
+  repo.write('design/missing.md', 'FU-11 is named here too.\n');
+  repo.write('STACK.md', stackText({ fus: [1, 2, 3, 4, 5, 14].map((n) => fu(n)) }));
+  repo.write('docs/plan.md', `- Locked design: [design](../design/missing.md)\n- Locked code plan: [code](plans/code.md)\nFU-12 in the campaign doc.\n\n${PLAN}`);
+  assert.deepEqual(planFuWarnings(audit()), [planFuWarning('FU-11', 'design/missing.md'), planFuWarning('FU-12', 'docs/plan.md')]);
+  // A root-absolute link resolves from the project root; two pointers naming one doc read it once.
+  repo.write('docs/plan.md', `- Locked design: [design](/design/missing.md)\n- Spec: [gone](gone.md)\n\n${PLAN}`);
+  repo.write('STACK.md', stackText({ fus: [1, 2, 3, 4, 5, 14].map((n) => fu(n)) }).replace('<!-- ledger:step-order Demo/2 docs/plan.md -->', '<!-- ledger:step-order Demo/2 docs/plan.md -->\n<!-- ledger:step-order Demo/3 docs/plan.md -->'));
+  assert.deepEqual(planFuWarnings(audit()), [
+    "docs/plan.md's Spec: line links gone.md, which is not a readable file — the plan-prose FU check can't read it",
+    planFuWarning('FU-11', 'design/missing.md'),
+  ]);
+  // Every pointer's doc is read, another campaign's too: the campaign that left keeps its untracked FUs in view.
+  repo.write('docs/plan.md', PLAN);
+  repo.write('STACK.md', stackText().replace('<!-- ledger:step-order Demo/2 docs/plan.md -->', '<!-- ledger:step-order Demo/2 docs/plan.md -->\n<!-- ledger:step-order Other/1 docs/old-plan.md -->'));
+  assert.deepEqual(planFuWarnings(audit()), [planFuWarning('FU-50', 'docs/old-plan.md')]);
+  // With no pointer, nothing is read, and the coverage says so instead of passing.
+  repo.write('STACK.md', stackText().replace('<!-- ledger:step-order Demo/2 docs/plan.md -->', ''));
+  const unread = audit();
+  assert.deepEqual(unread.planProse, { docs: 0, named: 0, untracked: 0 });
+  assert.match(formatReport(unread), /^PLAN PROSE {2}no step-order doc read, so no plan doc checked$/m);
+});
+
+test('an FU closed before FU-Closed footers existed is excused: issued before the migration commit and not listed by it; one listed by it and dropped since is not', (t) => {
+  const repo = makeRepo();
+  t.after(repo.cleanup);
+  // FU-8's row came and went before the migration, so its ID was issued then; the migration's STACK doesn't name it.
+  repo.commit('docs(stack): file FU-8\n', { 'STACK.md': stackText({ fus: [1, 2, 3, 4, 5, 8].map((n) => fu(n)) }) });
+  const stack = stackText();
+  repo.commit(`chore(stack): migrate the ledger to LedgerLoop\n\nMigration.\n\nLedger-Migration: Demo\n${CO}\n`, {
+    'STACK.md': stack,
+    'Standing-FUs.md': STANDING,
+    'docs/plan.md': `FU-8, FU-5 and FU-9 are named here.\n\n${PLAN}`,
+    'docs/lessons-reference.md': referenceText(stack),
+  });
+  addSyncs(repo, 1);
+  const project = { name: 'Demo', path: repo.dir, migrated: true, standing: 'Standing-FUs.md', reference: 'docs/lessons-reference.md' };
+  const audit = () => auditProject({ project, processRoot: makeProcessRoot(t), today: '2026-09-10' });
+  // FU-9 is above every ID issued by the migration, so it was issued after footers began.
+  assert.deepEqual(planFuWarnings(audit()), [planFuWarning('FU-9', 'docs/plan.md')]);
+  // FU-20, filed after the migration and dropped with no footer, isn't excused: only history up to the migration counts.
+  repo.commit('docs(stack): file FU-20\n', { 'STACK.md': stackText({ fus: [1, 2, 3, 4, 5, 20].map((n) => fu(n)) }) });
+  repo.commit('docs(stack): drop FU-20\n', { 'STACK.md': stackText(), 'docs/plan.md': `FU-8, FU-5, FU-9 and FU-20 are named here.\n\n${PLAN}` });
+  assert.deepEqual(planFuWarnings(audit()), [planFuWarning('FU-9', 'docs/plan.md'), planFuWarning('FU-20', 'docs/plan.md')]);
+  // FU-5 was listed at migration, so dropping its row without a footer is the defect, not a pre-footer close.
+  repo.write('STACK.md', stackText({ fus: [1, 2, 3, 4].map((n) => fu(n)) }));
+  assert.deepEqual(planFuWarnings(audit()), [planFuWarning('FU-5', 'docs/plan.md'), planFuWarning('FU-9', 'docs/plan.md'), planFuWarning('FU-20', 'docs/plan.md')]);
+});
+
 test('the anchor-sweep note names older STACK FUs anchored to files changed since the last sync, committed or not', (t) => {
   const { repo, audit } = setup(t);
   const row = (n, file) => `- **FU-${n}** [perf · cleanup-light] Thing ${n} — home: Demo/2.4 {anchor: ${file} :: thing}`;
@@ -305,6 +397,30 @@ test("an FU filed this session anchored to a file the session changed stops the 
   // The guarded condition removed: with src/a.ts back to its content at the sync, the session didn't change it.
   repo.write('src/a.ts', 'thing\n');
   assert.deepEqual(inArea(), ['FU-15']);
+});
+
+test("a /module-audit fix-group row is scheduled work the in-area stop passes; the reason without the group's marker isn't", (t) => {
+  const { repo, audit } = setup(t);
+  const row = (n, reason) => `- **FU-${n}** [perf · cleanup-light] Thing ${n} — why not now: ${reason} — home: Demo/2.4 {anchor: src/a.ts :: thing}`;
+  repo.commit('feat: a\n', { 'src/a.ts': 'thing\n', 'STACK.md': stackText({ fus: [fu(1), fu(2)] }) });
+  addSyncs(repo, 1);
+  repo.commit('fix: a\n', { 'src/a.ts': 'thing\nmore\n' });
+  const inArea = () => audit().stops.filter((s) => s.includes('filed this session in the area')).map((s) => s.split(' ')[0]);
+  // FU-10 is the row /module-audit Stage 5 tells the run to write, its placeholders filled, so a reworded template that
+  // loses the marker goes red here. FU-11 has no date in the run name, FU-12 names a group mid-sentence, FU-13 takes the
+  // marker under another reason and FU-14's group isn't a number, so each is a leftover the stop holds.
+  const template = read('commands/module-audit.md').match(/`(- \*\*FU-<n>\*\* \[<type> · <cleanup-light\|change-heavy>\][^`]*)`/)[1];
+  const fill = { n: '10', type: 'perf', 'cleanup-light|change-heavy': 'cleanup-light', "the group's fix, in one line": 'Thing 10', N: '2',
+    'date>-<module': '2026-11-21-holdings', g: '3', "the plan's absolute path": '/x/plan.md', 'Campaign>/<Phase>.<Step': 'Demo/2.4',
+    "the group's main file": 'src/a.ts', pattern: 'thing' };
+  const stage5 = Object.entries(fill).reduce((text, [slot, value]) => text.replaceAll(`<${slot}>`, value), template);
+  assert.doesNotMatch(stage5, /[<>]/, 'every placeholder in the Stage 5 row is filled');
+  repo.write('STACK.md', stackText({ fus: [fu(1), fu(2), stage5,
+    row(11, 'own run: /module-audit holdings fix group 3'),
+    row(12, 'own run: after /module-audit 2026-11-21-holdings fix group 3'),
+    row(13, 'risk: /module-audit 2026-11-21-holdings fix group 3'),
+    row(14, 'own run: /module-audit 2026-11-21-holdings fix group 3a')] }));
+  assert.deepEqual(inArea(), ['FU-11', 'FU-12', 'FU-13', 'FU-14']);
 });
 
 test('the rows a migration commit renders after a legacy sync are no in-area filing', (t) => {
@@ -622,7 +738,7 @@ test("a stale-home check that can't run stops instead of passing, and so does a 
   assert.deepEqual(r.staleHome, { verifiable: false, count: 0 });
   // Unbolded, a closed P2 would read as open and its FUs at Demo/2.4 would pass.
   repo.write('STACK.md', stackText({ phases: ['- [x] **P1 Setup**', '- [x] P2 Build'] }));
-  assert.deepEqual(audit().stops, ['STACK.md line 6 looks like a phase line but isn\'t in "**P<n> …**" form — can\'t tell whether it\'s closed']);
+  assert.deepEqual(audit().stops, ['STACK.md line 6 looks like a phase line but isn\'t in "**P<n> …**" or "**Phase <n> …**" form — can\'t tell whether it\'s closed']);
 });
 
 test("a campaign's open first phase, with nothing closed yet, lets the stale-home check run: FUs homed in it pass with no stop and no warning", (t) => {
@@ -636,7 +752,7 @@ test("a campaign's open first phase, with nothing closed yet, lets the stale-hom
 
 test("a campaign-close line isn't a phase line; a closed phase in another bullet style, marker, format or spelling stops instead of reading as open", (t) => {
   const { repo, audit } = setup(t);
-  const unrecognized = 'STACK.md line 6 looks like a phase line but isn\'t in "**P<n> …**" form — can\'t tell whether it\'s closed';
+  const unrecognized = 'STACK.md line 6 looks like a phase line but isn\'t in "**P<n> …**" or "**Phase <n> …**" form — can\'t tell whether it\'s closed';
   // The fixture's FUs sit at Demo/2.4. Read as open, a P2 closed in any of these forms would pass them unchecked.
   const closedP2Forms = [
     '* [x] **P2 Build**', '1. [x] **P2 Build**', '- ✅ **P2 Build**', '- ~~**P2 Build**~~',

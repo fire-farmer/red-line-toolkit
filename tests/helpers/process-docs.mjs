@@ -12,9 +12,10 @@ export const cliModes = () => read('scripts/ledger.mjs').match(/const USAGE = 'u
 
 export function processDocs() {
   const list = (dir) => readdirSync(join(root, dir)).filter((f) => f.endsWith('.md')).map((f) => `${dir}/${f}`);
-  const skills = readdirSync(join(root, 'skills'), { withFileTypes: true })
+  // The toolkit ships no skills today; a skills/<name>/SKILL.md added later is scanned with the rest.
+  const skills = existsSync(join(root, 'skills')) ? readdirSync(join(root, 'skills'), { withFileTypes: true })
     .filter((d) => d.isDirectory())
-    .map((d) => `skills/${d.name}/SKILL.md`);
+    .map((d) => `skills/${d.name}/SKILL.md`) : [];
   return [...list('commands'), ...list('reference'), ...list('agents'), ...skills];
 }
 

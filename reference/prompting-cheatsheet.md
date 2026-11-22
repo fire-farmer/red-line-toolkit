@@ -2,7 +2,7 @@
 
 > **Paths.** `${CLAUDE_PLUGIN_ROOT}` in this doc is the toolkit's install folder: the folder above the `reference/` folder this file was read from. Claude Code substitutes it only in commands, agents and skills, not in a file read with the Read tool, so write the real path in its place before you run or open anything here.
 
-The pipelines point at two sections here: the pre-flight scope check (`/cleanup-light`, `/page-design`, `/page-code`, `/page-implement`) and the steelman prompt (`/competitive-anchor`). Most of it is project-agnostic; the project-specific anchors are your CLAUDE.md's Heavy-rigor trigger and your stylesheet and component folders.
+The pipelines point at one section here, the pre-flight scope check (`/cleanup-light`, `/page-design`); the steelman prompt below is for your own decisions. Most of it is project-agnostic; the project-specific anchors are your CLAUDE.md's Heavy-rigor trigger and your stylesheet and component folders.
 
 ## Pre-Flight Scope Check
 

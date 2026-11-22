@@ -17,11 +17,15 @@ test('every telemetry template writes a row that parses, with one leftovers, one
   assert.throws(() => row('{\\"pipeline\\":\\"x\\",\\"keep\\":<k>,}'));
   const rows = appends.map((a) => ({ file: a.file, row: row(a.text.match(TEMPLATE)[1]) }));
   const leftovers = rows.filter((r) => r.row.leftovers).map((r) => `${r.file}: ${Object.keys(r.row.leftovers).join(' ')}`);
-  assert.deepEqual(leftovers, ['change-heavy', 'cleanup-light', 'page-implement'].map((p) => `commands/${p}.md: fixed filed dropped tweaks`));
+  assert.deepEqual(leftovers, ['change-heavy', 'cleanup-light'].map((p) => `commands/${p}.md: fixed filed dropped tweaks`));
   // The anchor sweep's counts (pipeline-shared.md § The anchor sweep), one shape in each pipeline that runs it.
   const swept = rows.filter((r) => r.row.swept).map((r) => `${r.file}: ${Object.keys(r.row.swept).join(' ')}`);
-  assert.deepEqual(swept, ['change-heavy', 'cleanup-light', 'page-implement'].map((p) => `commands/${p}.md: listed closed`));
+  assert.deepEqual(swept, ['change-heavy', 'cleanup-light'].map((p) => `commands/${p}.md: listed closed`));
   // The adjudicator stream is aggregated across these callers, so their rows carry the same fields.
   const adjudicator = (caller) => Object.keys(rows.find((r) => r.row.pipeline === 'adjudicator' && r.row.caller === caller).row).sort().join(' ');
-  assert.deepEqual(['change-heavy', 'page-implement'].map(adjudicator), Array(2).fill(adjudicator('cleanup-light')));
+  assert.deepEqual(['change-heavy'].map(adjudicator), [adjudicator('cleanup-light')]);
+  // A design build is marked on both change pipelines' rows, and a planning run's planned close is an outcome
+  // /change-heavy's row admits (pipeline-shared.md § Building from a locked design).
+  for (const p of ['change-heavy', 'cleanup-light']) assert.ok('design' in rows.find((r) => r.row.pipeline === p).row, `${p} rows carry no design field`);
+  assert.ok(appends.some((a) => a.file === 'commands/change-heavy.md' && /\\"pipeline\\":\\"change-heavy\\",\\"outcome\\":\\"<[^>]*\bplanned(?=[|>])/.test(a.text)), "change-heavy's row doesn't admit outcome planned");
 });

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PREFIX, cliModes, missingRepoPaths, processDocs, read, relativeRepoPaths, root } from './helpers/process-docs.mjs';
+import { CAMPAIGN_LINE, LOCAL_LINK } from '../lib/audit.mjs';
+import { CAMPAIGN, GROUP_STEPS, STEP_CELL } from '../lib/rows.mjs';
 
 // A run never waits for the owner on a programming call (reference/decision-gates.md). In the commands that is
 // structural: a command that never asks has no AskUserQuestion. The rulebook, a project's CLAUDE.md and the mods'
@@ -84,7 +86,7 @@ test('each retired stop is matched by its own pattern, prose about the new gates
   assert.deepEqual([RULEBOOK, ...mods].flatMap((f) => lines(f)).filter((l) => retired(l.text)).map((l) => l.at), []);
 });
 
-// Who may ask the owner: the commands decision-gates.md § Asked live names, whose job is the decision, and
+// Who may ask the owner: the commands decision-gates.md § Asked live names, whose job at hand is the decision, and
 // /pre-commit-check run directly (§ Asking the question). Every other command and skill takes AskUserQuestion out of
 // its tools in its frontmatter, so it can't ask even where a sentence tells it to.
 function askers() {
@@ -124,13 +126,12 @@ test('only the commands decision-gates.md names ask the owner, every other comma
   const allowed = askers();
   // Positive control: the two sections parse to the commands that ask live or are run directly.
   assert.deepEqual([...allowed].sort(), [
-    'commands/competitive-anchor.md', 'commands/module-build.md', 'commands/page-design.md', 'commands/pre-commit-check.md',
-    'commands/start-session.md', 'reference/decision-gates.md', 'skills/module-sprint/SKILL.md',
+    'commands/page-design.md', 'commands/pre-commit-check.md', 'commands/start-session.md', 'reference/decision-gates.md',
   ]);
   const runnable = docs.filter((f) => f.startsWith('commands/') || f.startsWith('skills/'));
   const neverAsk = runnable.filter((f) => !allowed.has(f));
   // Positive control: the never-ask set comes from the docs and holds the pipelines; the field reader sees a removal.
-  for (const known of ['commands/cleanup-light.md', 'commands/change-heavy.md', 'commands/page-implement.md', 'commands/end-session.md']) {
+  for (const known of ['commands/cleanup-light.md', 'commands/change-heavy.md', 'commands/end-session.md']) {
     assert.ok(neverAsk.includes(known), `${known} isn't in the never-ask set`);
   }
   assert.equal(fieldOf('---\nallowed-tools: Read\ndisallowed-tools: Bash, AskUserQuestion\n---\n', 'disallowed-tools'), ' Bash, AskUserQuestion');
@@ -148,7 +149,7 @@ test('only the commands decision-gates.md names ask the owner, every other comma
   assert.deepEqual(optionLists('One stop. Options: `A` · `B`.'), [{ line: 1, count: 2 }]);
   assert.deepEqual(optionLists('The test reads an `Options:` list.'), []);
   const lists = [...allowed].flatMap((f) => optionLists(read(f)).map((l) => ({ f, ...l })));
-  for (const known of ['commands/module-build.md', 'commands/pre-commit-check.md', 'commands/start-session.md']) assert.ok(lists.some((l) => l.f === known), `no option list found in ${known}`);
+  for (const known of ['commands/page-design.md', 'commands/pre-commit-check.md', 'commands/start-session.md']) assert.ok(lists.some((l) => l.f === known), `no option list found in ${known}`);
   assert.deepEqual(lists.filter((l) => l.count < 2 || l.count > 4).map((l) => `${l.f}:${l.line} — ${l.count} options`), []);
 });
 
@@ -157,8 +158,11 @@ test('a command that invokes a skill lists Skill in allowed-tools', () => {
   const INVOKES = /via the Skill tool|\b(?:invoke|through) `\/[a-z]/i;
   const commands = docs.filter((f) => f.startsWith('commands/'));
   const invoking = commands.filter((f) => INVOKES.test(read(f).replace(/^---\n[\s\S]*?\n---\n/, '')));
-  // Positive control: the matcher finds the pipelines that run /pre-commit-check.
-  for (const known of ['commands/cleanup-light.md', 'commands/end-session.md', 'commands/module-audit.md']) assert.ok(invoking.includes(known), known);
+  // Positive control: the matcher finds pipelines that hand work to a skill. /module-audit and /end-session left the list
+  // when their /pre-commit-check moved to a subagent (§ The pre-commit audit).
+  for (const known of ['commands/cleanup-light.md', 'commands/change-heavy.md']) assert.ok(invoking.includes(known), known);
+  // No command uses the `through` form now, so a literal line keeps that arm exercised.
+  assert.ok(INVOKES.test('commit them first (through `/pre-commit-check`)'));
   const tools = (f) => read(f).match(/^allowed-tools:(.*)$/m)?.[1] ?? '';
   assert.deepEqual(invoking.filter((f) => !/\bSkill\b/.test(tools(f))), []);
 });
@@ -225,7 +229,7 @@ test('every scope rule in the process docs and the rulebook names the minor twea
   assert.deepEqual(stale('No scope creep. Fixes noticed nearby go to follow-ups.'), ['f:1']);
   // Positive control: the scan reaches the pipelines' leftover rules and the filing bar itself.
   const ruled = (f) => staleScopeRules(f, untweaked(read(f))).length > 0;
-  for (const known of ['commands/cleanup-light.md', 'commands/page-implement.md', 'commands/change-heavy.md', 'reference/ledger-session.md', 'commands/pre-commit-check.md']) {
+  for (const known of ['commands/cleanup-light.md', 'commands/change-heavy.md', 'reference/ledger-session.md', 'commands/pre-commit-check.md']) {
     assert.ok(docs.includes(known) && ruled(known), `no scope rule found in ${known}`);
   }
   assert.deepEqual([RULEBOOK, ...docs].flatMap((f) => staleScopeRules(f, read(f))), []);
@@ -390,7 +394,7 @@ test('no doc carries a copy of a reference/pipeline-shared.md sentence', () => {
 test('every pipeline that reviews a written change runs the anchor sweep, and the sweep runs a mode the CLI takes', () => {
   const panel = docs.filter((f) => f.startsWith('commands/') && read(f).includes('§ The review panel'));
   // Positive control: the review-panel pipelines are found.
-  assert.deepEqual(panel.sort(), ['commands/change-heavy.md', 'commands/cleanup-light.md', 'commands/page-implement.md']);
+  assert.deepEqual(panel.sort(), ['commands/change-heavy.md', 'commands/cleanup-light.md']);
   // The instruction that runs it, not a mention: each Done summary names the section too.
   const runs = /\brun `\$\{CLAUDE_PLUGIN_ROOT\}\/reference\/pipeline-shared\.md` § The anchor sweep:/;
   assert.ok(!runs.test('- Anchor sweep: its line from `${CLAUDE_PLUGIN_ROOT}/reference/pipeline-shared.md` § The anchor sweep, or why it didn\'t run'));
@@ -444,9 +448,9 @@ test('pipelines name models by family alias, never a versioned ID, and leave eff
     // A project may name the API model its own product calls, so its CLAUDE.md is held to the `model:` spans only.
     .concat(projects.flatMap((p) => modelProblems(p.file, p.text, { ids: false })));
   assert.deepEqual(problems, [], `name the family alias (${[...MODEL_ALIASES].join(', ')}) and leave effort to the plan:\n${problems.join('\n')}`);
-  const unpointed = ['cleanup-light', 'change-heavy', 'page-code', 'page-implement']
+  const unpointed = ['cleanup-light', 'change-heavy', 'page-design', 'module-audit']
     .filter((c) => !read(`commands/${c}.md`).includes('pipeline-shared.md` § Models and effort'));
-  assert.deepEqual(unpointed, [], 'each pipeline that plans or runs code points at § Models and effort');
+  assert.deepEqual(unpointed, [], 'each pipeline that dispatches agents with an effort points at § Models and effort');
 });
 
 // A command loaded through the Skill tool arrives as a new user turn. A report-only command loaded that way, as
@@ -467,7 +471,212 @@ test('the matcher catches the Skill-tool call it bans', () => {
 
 test('each pipeline that commits points at § The pre-commit audit', () => {
   assert.match(read('reference/pipeline-shared.md'), /^## The pre-commit audit$/m);
-  for (const file of ['commands/cleanup-light.md', 'commands/change-heavy.md', 'commands/page-implement.md']) {
+  for (const file of ['commands/cleanup-light.md', 'commands/change-heavy.md', 'commands/end-session.md', 'commands/module-audit.md']) {
     assert.match(read(file), /§ The pre-commit audit/, file);
   }
+});
+
+// A UI scenario a browser can drive is a case in the module's browser spec, written by a design build and re-run by the
+// change pipelines and /module-audit (reference/pipeline-shared.md § Browser specs); a check by hand leaves nothing to
+// re-run. These are the manual-only phrasings it replaced. A project with no browser suite
+// still checks by hand, in the § Browser specs wording, which none of them matches.
+const MANUAL_ONLY = [
+  /run manual checks from the code plan's test scenarios/i,
+  /list what to verify manually/i,
+  /pair this audit with manual smoke testing/i,
+  /\(build \+ manual\)/i,
+  /build pass, manual checks/i,
+];
+
+test('no pipeline checks a UI scenario only by hand, and each that verifies or audits UI points at § Browser specs', () => {
+  const hits = docs.flatMap((file) => MANUAL_ONLY.filter((p) => p.test(read(file))).map((p) => `${file}: ${p.source}`));
+  assert.deepEqual(hits, []);
+  assert.match(read('reference/pipeline-shared.md'), /^## Browser specs$/m);
+  const unpointed = ['cleanup-light', 'change-heavy', 'module-audit']
+    .filter((c) => !read(`commands/${c}.md`).includes('pipeline-shared.md` § Browser specs'));
+  assert.deepEqual(unpointed, []);
+});
+
+test('the manual-check matcher catches each phrasing it bans and passes the no-suite fallback', () => {
+  const retired = [
+    'Also run manual checks from the code plan\'s test scenarios.',
+    'For UI-only changes, list what to verify manually.',
+    'use `/mobile-audit` for mobile or pair this audit with manual smoke testing',
+    'verifies (build + manual), then one review',
+    '- Verify status (build pass, manual checks)',
+  ];
+  retired.forEach((line, i) => assert.ok(MANUAL_ONLY[i].test(line), line));
+  assert.equal(retired.length, MANUAL_ONLY.length);
+  assert.ok(!MANUAL_ONLY.some((p) => p.test('a project with no browser suite runs every scenario by hand and says so in the report')));
+});
+
+// Commands the toolkit no longer ships. A live mention sends a reader to a command that doesn't exist; a sentence the
+// HISTORY matcher reads as history may still name one. A name counts as `/<name>` (a command, or a path such as
+// commands/<name>.md), as a backticked bare name, not followed by [\w-], or as an escaped-quote string (\"<name>\", a
+// telemetry template's pipeline); in code and the mods, also as a quoted string.
+const RETIRED_SKILLS = ['module-sprint', 'module-build', 'cluster-fus', 'competitive-anchor', 'page-code', 'page-implement', 'module-repro-sketcher'];
+const RETIRED_SKILL = (n, { code = false } = {}) => new RegExp(`/${n}(?![\\w-])|\`${n}\`|\\\\"${n}\\\\"|red-line-toolkit:${n}(?![\\w-])${code ? `|['"]${n}['"]` : ''}`);
+const retiredAt = (file, text, opts) => text.split('\n').flatMap((line, i) => line.split(/(?<=[.;!?])\s+/)
+  .filter((s) => !HISTORY.test(s))
+  .flatMap((s) => RETIRED_SKILLS.filter((n) => RETIRED_SKILL(n, opts).test(s)).map((n) => `${file}:${i + 1} /${n}`)));
+// Every shipped file a reader or a session opens: the process docs, the mods and code, the public guides, the templates,
+// docs/checks.md and the plugin manifests.
+const GUIDES = ['README.md', 'QUICKSTART.md', 'THE-SYSTEM.md', 'CHEATSHEET.md', 'docs/checks.md', '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json'];
+const templates = readdirSync(join(root, 'templates'), { recursive: true }).filter((f) => f.endsWith('.md')).map((f) => `templates/${f}`);
+
+test('no shipped doc, mod or code names a retired command or agent outside a history sentence', () => {
+  // Positive control: each name in each encoding is caught, a path through the slash form too, and a quoted string only
+  // in code; a longer name, a bare prose mention and a history sentence pass; a live mention after a history clause in
+  // its own sentence is caught. Known limit: one sentence that joins history and a live mention with a comma passes.
+  for (const n of RETIRED_SKILLS) {
+    assert.deepEqual(retiredAt('f', `Run /${n} next.`), [`f:1 /${n}`]);
+    assert.deepEqual(retiredAt('f', `the \`${n}\` command`), [`f:1 /${n}`]);
+    assert.deepEqual(retiredAt('f', `Dispatch red-line-toolkit:${n} now.`), [`f:1 /${n}`]);
+    assert.deepEqual(retiredAt('f', `const X = ['${n}'];`, { code: true }), [`f:1 /${n}`]);
+    assert.deepEqual(retiredAt('f', `const X = ['${n}'];`), []);
+  }
+  assert.deepEqual(retiredAt('f', 'echo "{\\"pipeline\\":\\"cluster-fus\\"}"'), ['f:1 /cluster-fus']);
+  assert.deepEqual(retiredAt('f', 'Open `commands/cluster-fus.md` first.'), ['f:1 /cluster-fus']);
+  assert.deepEqual(retiredAt('f', 'Run /module-builder, or module-build in prose.'), []);
+  assert.deepEqual(retiredAt('f', '`/module-build` was retired.'), []);
+  assert.deepEqual(retiredAt('f', 'It replaced the old triage; run `/cluster-fus` next.'), ['f:1 /cluster-fus']);
+  assert.deepEqual(retiredAt('f', 'The triage step replaced the old one, so run /cluster-fus next.'), []);
+  // Positive control: the scan reaches the public guides and the templates.
+  for (const known of ['README.md', 'QUICKSTART.md', 'THE-SYSTEM.md', 'CHEATSHEET.md', 'templates/CLAUDE.md']) {
+    assert.ok([...GUIDES, ...templates].includes(known) && existsSync(join(root, known)), `${known} isn't scanned`);
+  }
+  // No retired file is still shipped.
+  const shipped = RETIRED_SKILLS.flatMap((n) => [`commands/${n}.md`, `agents/${n}.md`, `skills/${n}`]).filter((f) => existsSync(join(root, f)));
+  assert.deepEqual(shipped, []);
+  assert.deepEqual([
+    ...[...docs, ...GUIDES, ...templates].flatMap((f) => retiredAt(f, read(f))),
+    ...[...mods, ...code].flatMap((f) => retiredAt(f, read(f), { code: true })),
+  ], []);
+});
+
+// Building from a locked design: what a page build needs beyond any change lives in one section of
+// reference/pipeline-shared.md. Each gate is pinned inside its
+// own labelled bullet, since a phrase that also appears in another bullet would survive its gate's deletion, and every
+// labelled bullet has an entry, so a new or deleted bullet goes red.
+const DESIGN = 'Building from a locked design';
+const designBullets = (text) => {
+  const sec = text.split(/^## /m).find((s) => s.startsWith(`${DESIGN}\n`)) ?? '';
+  return Object.fromEntries([...sec.matchAll(/^- \*\*([^*]+?)\.\*\* ([\s\S]*?)(?=^- \*\*|(?![\s\S]))/gm)].map((m) => [m[1], m[2]]));
+};
+const DESIGN_GATES = {
+  When: ['draft design is refused', 'Parts row'],
+  Entry: ['force heavy', '`new print`', 'never takes the quick lane'],
+  'The plan': ['`parent-design:`', '`mockup:`', '-code.md', '`status: locked`', 'performance considerations (', 'security boundaries (RLS', 'never from a `canvas:` link', 'Critic 2a'],
+  'The planned close': ['`planned`', '`status: proposed`', '-campaign.md', '`- **Locked code plan:**`', '`/end-session`'],
+  'Written at implement': ['characterization test', 'browser-spec cases', 'matched to the mockup'],
+  'Gated at verify': ['characterization-test gate', 'browser-spec gate', '375px', 'Figures', 'Spec decisions honoured', 'before the review', 'again after its fixes'],
+  Review: ['`/security-review` on every run', 'accessibility', 'code plan'],
+  'Kick-backs': ['`/page-design`', 'parked', 'R-12'],
+  'Old plans': ['locked before this section'],
+  Report: ['`/mobile-audit <page>`'],
+  'Browser tools': ['mcp__Claude_Browser__preview_start', 'mcp__Claude_Browser__navigate', 'mcp__Claude_Browser__resize_window', 'mcp__Claude_Browser__javascript_tool', 'mcp__Claude_Browser__computer'],
+};
+const missingGates = (text) => {
+  const b = designBullets(text);
+  return Object.entries(DESIGN_GATES).flatMap(([label, phrases]) => phrases.filter((p) => !(b[label] ?? '').includes(p)).map((p) => `${label}: ${p}`));
+};
+// Each rule a pipeline stage carries for this work, pinned by a phrase on its line, with the pointer on that line too
+// unless the rule only restates a trigger. A stage with two rules keeps both.
+const DESIGN_POINTER = `pipeline-shared.md\` § ${DESIGN}`;
+const DESIGN_PIPELINES = ['commands/change-heavy.md', 'commands/cleanup-light.md'];
+const DESIGN_RULES = [
+  ['commands/change-heavy.md', '**Planning from a locked design** ("plan'],
+  ['commands/change-heavy.md', 'the third is work that builds from a locked design'],
+  ['commands/change-heavy.md', '**Planning from a locked design** writes its plan'],
+  ['commands/change-heavy.md', "Critic 2a's prompt also checks structure and performance"],
+  ['commands/change-heavy.md', '`status: locked` instead of `approved`'],
+  ['commands/change-heavy.md', '**Work from a locked design:** its tasks write'],
+  ['commands/change-heavy.md', '**Design gates.**'],
+  ['commands/change-heavy.md', '*or* the work builds from a locked design'],
+  ['commands/change-heavy.md', 'or the work builds from a locked design, invoke', null],
+  ['commands/change-heavy.md', 'for work from a locked design, the verify gates of'],
+  ['commands/change-heavy.md', 'any of its three triggers', 'or a design build'],
+  ['commands/change-heavy.md', 'decided on the diff, and a design build always runs it', null],
+  ['commands/change-heavy.md', 'Stage 3c decides on the diff, and a design build always runs it', null],
+  ['commands/change-heavy.md', '**OR the work builds from a locked design**', null],
+  ['commands/change-heavy.md', 'its triggers: the risk surface, a risk path, a design build', null],
+  ['commands/change-heavy.md', 'also get the code plan\'s and mockup\'s paths'],
+  ['commands/change-heavy.md', 'except one that finds the design itself wrong'],
+  ['reference/pipeline-shared.md', 'work from a locked design always engages both pipelines\' passes', null],
+  ['commands/change-heavy.md', 'Stage 0 flag, a design build, OR', null],
+  ['commands/change-heavy.md', '4. **Planned close**'],
+  ['commands/change-heavy.md', '- Work from a locked design: the Report lines'],
+  ['commands/cleanup-light.md', 'Planning from a locked design always goes there'],
+  ['commands/cleanup-light.md', "and isn't a step that builds from a locked design"],
+  ['commands/cleanup-light.md', 'and a design build always runs it', null],
+  ['commands/cleanup-light.md', 'Work from a locked design never skips this stage'],
+  ['commands/cleanup-light.md', '**Work from a locked design** writes the characterization test'],
+  ['commands/cleanup-light.md', 'on every run of work from a locked design'],
+  ['commands/cleanup-light.md', "seat 3h's prompt and every critic's carry"],
+  ['commands/cleanup-light.md', 'A verdict that the design itself is wrong is parked'],
+  ['commands/cleanup-light.md', 're-runs the verify gates of'],
+  ['commands/cleanup-light.md', '`design` is whether the work built from a locked design'],
+  ['commands/cleanup-light.md', '- Work from a locked design: the Report lines'],
+  ['commands/end-session.md', 'A proposed campaign opened', DESIGN_POINTER, '`status: proposed`', '`- **Locked code plan:**`', '`status: active`'],
+];
+const brokenRules = (texts) => DESIGN_RULES.flatMap(([file, anchor, ...also]) => {
+  const line = (texts[file] ?? read(file)).split('\n').find((l) => l.includes(anchor));
+  const need = also.length === 0 ? [DESIGN_POINTER] : also.filter(Boolean);
+  return !line ? [`${file}: ${anchor}`] : need.filter((n) => !line.includes(n)).map((n) => `${file}: ${anchor} lacks ${n}`);
+});
+
+test('§ Building from a locked design pins each gate in its own bullet, and each rule a stage carries for it holds', () => {
+  const shared = read('reference/pipeline-shared.md');
+  // Every labelled bullet has an entry, and every entry a bullet.
+  assert.deepEqual(Object.keys(designBullets(shared)).sort(), Object.keys(DESIGN_GATES).sort());
+  assert.deepEqual(missingGates(shared), []);
+  // Positive control: deleting any one gate phrase from its own bullet is reported, though it may appear elsewhere.
+  const b = designBullets(shared);
+  for (const [label, phrases] of Object.entries(DESIGN_GATES)) for (const p of phrases) {
+    assert.deepEqual(missingGates(shared.replace(b[label], b[label].split(p).join(''))), [`${label}: ${p}`], `${label}: ${p}`);
+  }
+  assert.deepEqual(brokenRules({}), []);
+  // Positive control: a rule's line losing its pointer, or a phrase it must carry, is reported.
+  const ch = read('commands/change-heavy.md'), es = read('commands/end-session.md');
+  const design = ch.split('\n').find((l) => l.includes('**Design gates.**'));
+  assert.ok(brokenRules({ 'commands/change-heavy.md': ch.replace(design, design.split(DESIGN_POINTER).join('pipeline-shared.md` § Nowhere')) }).includes(`commands/change-heavy.md: **Design gates.** lacks ${DESIGN_POINTER}`));
+  assert.ok(brokenRules({ 'commands/end-session.md': es.replace('`status: active`', '`status: open`') }).includes('commands/end-session.md: A proposed campaign opened lacks `status: active`'));
+  // Positive control: deleting any one rule's phrase is reported.
+  for (const [file, anchor] of DESIGN_RULES) {
+    assert.deepEqual(brokenRules({ [file]: read(file).split(anchor).join('') }).filter((r) => r.startsWith(`${file}: ${anchor}`)), [`${file}: ${anchor}`], anchor);
+  }
+});
+
+test('a pipeline that runs the locked-design gates pre-approves every browser-pane tool the section names', () => {
+  const tools = designBullets(read('reference/pipeline-shared.md'))['Browser tools'].match(/mcp__Claude_Browser__\w+/g) ?? [];
+  assert.ok(tools.length >= 5, 'the Browser tools bullet names too few tools');
+  const lacking = (f, text) => tools.filter((t) => !fieldOf(text, 'allowed-tools').split(/[,\s]+/).includes(t)).map((t) => `${f}: ${t}`);
+  // Positive control: a missing tool is reported.
+  assert.deepEqual(lacking('x', read('commands/change-heavy.md').replace(', mcp__Claude_Browser__navigate', '')), ['x: mcp__Claude_Browser__navigate']);
+  assert.deepEqual(DESIGN_PIPELINES.flatMap((f) => lacking(f, read(f))), []);
+});
+
+// The planned close writes a campaign doc from the section's template, and the ledger reads that doc through its own
+// regexes, so a template that drifts from them writes a campaign the audit can't follow.
+test("the planned close's campaign template is one the ledger reads", () => {
+  const bullet = designBullets(read('reference/pipeline-shared.md'))['The planned close'];
+  const block = bullet.match(/```markdown\n([\s\S]*?)\n\s*```/)?.[1];
+  assert.ok(block, 'no ```markdown template in The planned close');
+  const doc = block.split('\n').map((l) => l.replace(/^ {2}/, '')).join('\n').replace(/<Module>/g, 'Billing');
+  assert.match(doc, /^---\nstatus: proposed\n/);
+  assert.match(doc.match(/^slug: (.*)$/m)[1], new RegExp(`^${CAMPAIGN}$`));
+  const lines = doc.split('\n');
+  const labelled = lines.map((l) => l.match(CAMPAIGN_LINE)).filter(Boolean);
+  assert.deepEqual(labelled.map((m) => m[1]), ['Spec', 'Locked design', 'Locked code plan']);
+  // /end-session opens a proposed doc by this exact bold line, so the template must write it so.
+  assert.ok(lines.some((l) => l.startsWith('- **Locked code plan:**')), 'the template\'s Locked code plan line lost the bold /end-session keys on');
+  for (const m of labelled) assert.ok(LOCAL_LINK.test(m[2]), `${m[1]}: needs a [title](path) link`);
+  const phases = lines.slice(lines.indexOf('## Phases'));
+  assert.ok(lines.includes('## Phases') && phases.some((l) => STEP_CELL.test(l)), 'no step row the ledger schedules under ## Phases');
+  assert.ok(lines.some((l) => GROUP_STEPS.test(l)), 'no ## Group steps table');
+  assert.ok(lines.some((l) => l.startsWith('**Design gaps:**') && l.includes('`/page-design`')), 'no Design gaps rule');
+  assert.ok(lines.some((l) => l.startsWith('**Close (after the last phase):**') && l.includes('/module-audit') && l.includes('/mobile-audit')), 'no Close line');
+  // Positive control: a link without the [title](path) form, or a Parts row, isn't read as the ledger reads a step.
+  assert.ok(!LOCAL_LINK.test('<date>-<module>-design.md'));
+  assert.ok(!STEP_CELL.test('| P1 | <the step> |'));
 });
